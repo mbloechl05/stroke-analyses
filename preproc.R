@@ -75,11 +75,7 @@ wave_2_c  <- wave_2_c[,c("idauniq", "fqethnr", "indager",
                          "CfLisEn", "CfLisD",
                          # depressive symptoms
                          "PScedA", "PScedB", "PScedC", "PScedD", "PScedE", "PScedF", 
-                         "PScedG", "PScedH",
-                         # life satisfacrtion
-                         "sclifea", "sclifeb", "sclifec", "sclifed", "sclifee", 
-                         # loneliness
-                         "scfeela", "scfeelb", "scfeelc")]
+                         "PScedG", "PScedH")]
 
 wave_3_c  <- wave_3_c[,c("idauniq", "w3indout", "indager",
                          
@@ -97,11 +93,7 @@ wave_3_c  <- wave_3_c[,c("idauniq", "w3indout", "indager",
                          "cflisen", "cflisd",
                          # depressive symptoms
                          "psceda", "pscedb", "pscedc", "pscedd", "pscede", "pscedf", 
-                         "pscedg", "pscedh",
-                         # life satisfaction
-                         "sclifea", "sclifeb", "sclifec", "sclifed", "sclifee", 
-                         # loneliness
-                         "scfeela", "scfeelb", "scfeelc")]
+                         "pscedg", "pscedh")]
 
 wave_4_c  <- wave_4_c[,c("idauniq", "indager", "outindw4",
                          # stroke newly diagnosed
@@ -115,11 +107,7 @@ wave_4_c  <- wave_4_c[,c("idauniq", "indager", "outindw4",
                          "cflisen", "cflisd",
                          # depressive symptoms
                          "psceda", "pscedb", "pscedc", "pscedd", "pscede", "pscedf", 
-                         "pscedg", "pscedh", 
-                         # life satisfaction
-                         "sclifea", "sclifeb", "sclifec", "sclifed", "sclifee", 
-                         # loneliness
-                         "scfeela", "scfeelb", "scfeelc")]
+                         "pscedg", "pscedh")]
 
 wave_5_c  <- wave_5_c[,c("idauniq", "indager", "w5indout", 
                          # stroke newly diagnosed
@@ -133,11 +121,7 @@ wave_5_c  <- wave_5_c[,c("idauniq", "indager", "w5indout",
                          "cflisen", "cflisd",
                          # depressive symptoms
                          "psceda", "pscedb", "pscedc", "pscedd" , "pscede" , "pscedf", 
-                         "pscedg", "pscedh", 
-                         # life satisfaction
-                         "sclifea", "sclifeb", "sclifec", "sclifed", "sclifee", 
-                         # loneliness
-                         "scfeela", "scfeelb", "scfeelc")]
+                         "pscedg", "pscedh")]
 
 wave_6_c  <- wave_6_c[,c("idauniq", "indager", "w6indout",
                          # stroke newly diagnosed
@@ -151,11 +135,7 @@ wave_6_c  <- wave_6_c[,c("idauniq", "indager", "w6indout",
                          "CfLisEn", "CfLisD",
                          # depressive symptoms
                          "PScedA", "PScedB", "PScedC", "PScedD" , "PScedE" , "PScedF", 
-                         "PScedG", "PScedH", 
-                         # life satisfaction
-                         "sclifea", "sclifeb", "sclifec", "sclifed", "sclifee",
-                         # loneliness
-                         "scfeela", "scfeelb", "scfeelc")]
+                         "PScedG", "PScedH")]
 
 wave_7_c  <- wave_7_c[,c("idauniq", "indager", 
                          # stroke newly diagnosed
@@ -169,11 +149,7 @@ wave_7_c  <- wave_7_c[,c("idauniq", "indager",
                          "CfLisEn", "CfLisD",
                          # depressive symptoms
                          "PScedA", "PScedB", "PScedC", "PScedD" , "PScedE" , "PScedF", 
-                         "PScedG", "PScedH", 
-                         # life satisfaction
-                         "sclifea", "sclifeb", "sclifec", "sclifed", "sclifee", 
-                         # loneliness
-                         "scfeela", "scfeelb", "scfeelc")]
+                         "PScedG", "PScedH")]
 
 # Harmonise naming of depression variables across waves (rename wave 2, 6, and 7 items)
 setnames(wave_2_c, 
@@ -257,230 +233,9 @@ data <- data %>% mutate_all(funs(na_if(., -2)))
 data <- data %>% mutate_all(funs(na_if(., -1)))
 
 
-# ------------------------------------------------------------
-# 2) Recode variables demographic variables and co-variates
-# ------------------------------------------------------------
- 
-# 2.1) Age
- 
-### Recode age variable; 109 adults aged > 89 have age coded as 99;
-### these are set as missings
-data$w1_dhager[data$w1_dhager == 99] <- NA
- 
- 
-# 2.2) Sex and Smoking
-
-### Recode all binary variables to 0 (no) and 1 (yes); before 1 (yes), 2 (no)
-for (i in names(data[,c(grep("w1_dhsex", colnames(data)), # 0 = female
-                        grep("w1_heska", colnames(data))
-)])) {
-  data[[i]][data[[i]]==2] <- 0}
- 
- 
-# 2.3) Ethnicity
-
-### Recode ethnicity so "white" is coded as 1 and "non-white" as 0
-data$w0_ethni <- ifelse(data$w0_ethnicr == 1, 1, 0)
- 
- 
-# 2.4) Education
-
-### Re-code education variable (higher education? (yes / no))
-data$w0_topqual2[data$w0_topqual2 == 6] <- NA # recode foreign / other qual to NA
-data$w0_topqual2[data$w0_topqual2 == 8] <- NA # recode full-time students to NA
-data$w0_educ <- ifelse(data$w0_topqual2 == 1, 1, 0)
-
-
-# 2.5) Hypertension
-
-### Create hypertension variable from CVD-variables at wave 1
-data$w1_hypt <- ifelse(data$w1_hedia01 == 1, 1, 0)
-data$w1_hypt[data$w1_hedia02 == 1 | data$w1_hedia03 == 1 | data$w1_hedia04 == 1 |
-               data$w1_hedia05 == 1 | data$w1_hedia06 == 1 | data$w1_hedia07 == 1 |
-               data$w1_hedia08 == 1 | data$w1_hedia09 == 1] <- 1
-
-
-# 2.6) Diabetes
-
-### Create diabetes variable from CVD-variables at wave 1
-data$w1_diab <- ifelse(data$w1_hedia01 == 7, 1, 0)
-data$w1_diab[data$w1_hedia02 == 7 | data$w1_hedia03 == 7 | data$w1_hedia04 == 7 |
-               data$w1_hedia05 == 7 | data$w1_hedia06 == 7 | data$w1_hedia07 == 7 |
-               data$w1_hedia08 == 7 | data$w1_hedia09 == 7] <- 1
-
-
-# 2.7) Recode some variables as factors for imputation
-
-data$w0_ethni <- as.factor(data$w0_ethni)
-data$w1_dhsex <- as.factor(data$w1_dhsex)
-data$w0_educ  <- as.factor(data$w0_educ)
-data$w1_hypt  <- as.factor(data$w1_hypt)
-data$w1_heska <- as.factor(data$w1_heska)
-data$w1_diab  <- as.factor(data$w1_diab)
-
-
-# ----------------------------
-# Prepare outcome variables
-# ----------------------------
-
-# Depressive Symptoms (CESD, 8 items)
-# --------------------------------------
-
-# Recode items to dummies (0 = no, 1 = yes)
-for (i in names(data[,c(grep("psced", colnames(data)))])) {
-  data[[i]][data[[i]] == 2] <- 0}
-
-# Reverse item d 
-data$w2_pscedd_r <- 1 - data$w2_pscedd
-data$w3_pscedd_r <- 1 - data$w3_pscedd
-data$w4_pscedd_r <- 1 - data$w4_pscedd
-data$w5_pscedd_r <- 1 - data$w5_pscedd
-data$w6_pscedd_r <- 1 - data$w6_pscedd
-data$w7_pscedd_r <- 1 - data$w7_pscedd
-
-# Reverse item f 
-data$w2_pscedf_r <- 1 - data$w2_pscedf
-data$w3_pscedf_r <- 1 - data$w3_pscedf
-data$w4_pscedf_r <- 1 - data$w4_pscedf
-data$w5_pscedf_r <- 1 - data$w5_pscedf
-data$w6_pscedf_r <- 1 - data$w6_pscedf
-data$w7_pscedf_r <- 1 - data$w7_pscedf
-
-# Select all CES-D items for each wave 
-w2_dep_items <- data[,c("w2_psceda"  , "w2_pscedb", "w2_pscedd_r", "w2_pscede", 
-                        "w2_pscedf_r", "w2_pscedg", "w2_pscedh")] # wave 2
-w3_dep_items <- data[,c("w3_psceda"  , "w3_pscedb", "w3_pscedd_r", "w3_pscede", 
-                        "w3_pscedf_r", "w3_pscedg", "w3_pscedh")] # wave 3
-w4_dep_items <- data[,c("w4_psceda"  , "w4_pscedb", "w4_pscedd_r", "w4_pscede", 
-                        "w4_pscedf_r", "w4_pscedg", "w4_pscedh")] # wave 4
-w5_dep_items <- data[,c("w5_psceda"  , "w5_pscedb", "w5_pscedd_r", "w5_pscede", 
-                        "w5_pscedf_r", "w5_pscedg", "w5_pscedh")] # wave 5
-w6_dep_items <- data[,c("w6_psceda"  , "w6_pscedb", "w6_pscedd_r", "w6_pscede", 
-                        "w6_pscedf_r", "w6_pscedg", "w6_pscedh")] # wave 6
-w7_dep_items <- data[,c("w7_psceda"  , "w7_pscedb", "w7_pscedd_r", "w7_pscede", 
-                        "w7_pscedf_r", "w7_pscedg", "w7_pscedh")] # wave 7
-
-# Calculate sum score of depressive symptoms (people with missing values are excluded)
-data$w2_dep_sum <- rowSums(w2_dep_items)
-data$w3_dep_sum <- rowSums(w3_dep_items)
-data$w4_dep_sum <- rowSums(w4_dep_items)
-data$w5_dep_sum <- rowSums(w5_dep_items)
-data$w6_dep_sum <- rowSums(w6_dep_items)
-data$w7_dep_sum <- rowSums(w7_dep_items)
-
-# # Double check missing items 
-# aggr(data[c("w2_psceda", "w2_pscedb", "w2_pscedd", "w2_pscede", "w2_pscedf", "w2_pscedg", 
-#             "w2_pscedh", "w2_dep_sum")], numbers = TRUE, prop = c(TRUE, FALSE))
-
-
-# Life satisfaction (SWLS, 5 items)
-# -----------------------------------
-
-# Select all SWLS items for each wave 
-w2_swl_items <- data[,c("w2_sclifea", "w2_sclifeb", "w2_sclifec", "w2_sclifed", "w2_sclifee")] # wave 2
-w3_swl_items <- data[,c("w3_sclifea", "w3_sclifeb", "w3_sclifec", "w3_sclifed", "w3_sclifee")] # wave 3
-w4_swl_items <- data[,c("w4_sclifea", "w4_sclifeb", "w4_sclifec", "w4_sclifed", "w4_sclifee")] # wave 4
-w5_swl_items <- data[,c("w5_sclifea", "w5_sclifeb", "w5_sclifec", "w5_sclifed", "w5_sclifee")] # wave 5
-w6_swl_items <- data[,c("w6_sclifea", "w6_sclifeb", "w6_sclifec", "w6_sclifed", "w6_sclifee")] # wave 6
-w7_swl_items <- data[,c("w7_sclifea", "w7_sclifeb", "w7_sclifec", "w7_sclifed", "w7_sclifee")] # wave 7
-
-# Calculate mean scores for life satisfaction
-data$w2_swl_mean <- rowMeans(w2_swl_items)
-data$w3_swl_mean <- rowMeans(w3_swl_items)
-data$w4_swl_mean <- rowMeans(w4_swl_items)
-data$w5_swl_mean <- rowMeans(w5_swl_items)
-data$w6_swl_mean <- rowMeans(w6_swl_items)
-data$w7_swl_mean <- rowMeans(w7_swl_items)
-
-# Recode scale so that higher values indicate higher life satisfaction
-data$w2_swl_mean <- 8-data$w2_swl_mean
-data$w3_swl_mean <- 8-data$w3_swl_mean
-data$w4_swl_mean <- 8-data$w4_swl_mean
-data$w5_swl_mean <- 8-data$w5_swl_mean
-data$w6_swl_mean <- 8-data$w6_swl_mean
-data$w7_swl_mean <- 8-data$w7_swl_mean
-
-
-# Loneliness (UCLA scale, 3 items)
-# ---------------------------------------
-
-# Select all loneliness items for each wave 
-w2_lon_items <- data[,c("w2_scfeela", "w2_scfeelb", "w2_scfeelc")] # wave 2
-w3_lon_items <- data[,c("w3_scfeela", "w3_scfeelb", "w3_scfeelc")] # wave 3
-w4_lon_items <- data[,c("w4_scfeela", "w4_scfeelb", "w4_scfeelc")] # wave 4
-w5_lon_items <- data[,c("w5_scfeela", "w5_scfeelb", "w5_scfeelc")] # wave 5
-w6_lon_items <- data[,c("w6_scfeela", "w6_scfeelb", "w6_scfeelc")] # wave 6
-w7_lon_items <- data[,c("w7_scfeela", "w7_scfeelb", "w7_scfeelc")] # wave 7
-
-# Calculate mean scores for loneliness
-data$w2_lon_mean <- rowMeans(w2_lon_items)
-data$w3_lon_mean <- rowMeans(w3_lon_items)
-data$w4_lon_mean <- rowMeans(w4_lon_items)
-data$w5_lon_mean <- rowMeans(w5_lon_items)
-data$w6_lon_mean <- rowMeans(w6_lon_items)
-data$w7_lon_mean <- rowMeans(w7_lon_items)
-
-
-# -------------------------------------------------
-# 5) Prepare mediator variable: Disability items
-# -------------------------------------------------
-
-# Get disability data from wave 2 (13 items) and recode items
-for (i in names(data[,c(grep("headb", colnames(data)))])) {
-  data[[i]] <- data[[i]] %>% dplyr::recode(., 
-                                           '96' = 0,
-                                           '1'  = 1,
-                                           '2'  = 1,
-                                           '3'  = 1,
-                                           '4'  = 1,
-                                           '5'  = 1,
-                                           '6'  = 1,
-                                           '7'  = 1,
-                                           '8'  = 1,
-                                           '9'  = 1,
-                                           '10' = 1,
-                                           '11' = 1,
-                                           '12' = 1,
-                                           '13' = 1)
-}
-
-# Select all ADL items for each wave
-w2_adl_items <- data[,c( "w2_headb01", "w2_headb02", "w2_headb03", "w2_headb04", "w2_headb05", 
-                         "w2_headb06", "w2_headb07", "w2_headb08", "w2_headb09", "w2_headb10",
-                         "w2_headb11", "w2_headb12", "w2_headb13")] # wave 2
-
-w3_adl_items <- data[,c( "w3_headldr", "w3_headlwa", "w3_headlba", "w3_headlea", "w3_headlbe", 
-                         "w3_headlwc", "w3_headlma", "w3_headlpr", "w3_headlsh", "w3_headlph", 
-                         "w3_headlme", "w3_headlho", "w3_headlmo")] # wave 3
-
-w4_adl_items <- data[,c( "w4_headldr", "w4_headlwa", "w4_headlba", "w4_headlea", "w4_headlbe", 
-                         "w4_headlwc", "w4_headlma", "w4_headlpr", "w4_headlsh", "w4_headlph", 
-                         "w4_headlme", "w4_headlho", "w4_headlmo")] # wave 4
-
-w5_adl_items <- data[,c( "w5_headldr", "w5_headlwa", "w5_headlba", "w5_headlea", "w5_headlbe", 
-                         "w5_headlwc", "w5_headlma", "w5_headlpr", "w5_headlsh", "w5_headlph", 
-                         "w5_headlme", "w5_headlho", "w5_headlmo")] # wave 5
-
-w6_adl_items <- data[,c( "w6_headldr", "w6_headlwa", "w6_headlba", "w6_headlea", "w6_headlbe", 
-                         "w6_headlwc", "w6_headlma", "w6_headlpr", "w6_headlsh", "w6_headlph", 
-                         "w6_headlme", "w6_headlho", "w6_headlmo")] # wave 6
-
-w7_adl_items <- data[,c( "w7_headldr", "w7_headlwa", "w7_headlba", "w7_headlea", "w7_headlbe", 
-                         "w7_headlwc", "w7_headlma", "w7_headlpr", "w7_headlsh", "w7_headlph", 
-                         "w7_headlme", "w7_headlho", "w7_headlmo")] # wave 7
-
-# Calculate sum scores for each wave
-data$w2_adl_mean <- rowSums(w2_adl_items, na.rm = T)
-data$w3_adl_mean <- rowSums(w3_adl_items)
-data$w4_adl_mean <- rowSums(w4_adl_items)
-data$w5_adl_mean <- rowSums(w5_adl_items)
-data$w6_adl_mean <- rowSums(w6_adl_items)
-data$w7_adl_mean <- rowSums(w7_adl_items)
-
-
-# ----------------------------
-# Exclusion of participants
-# ----------------------------
+# ------------------------------------------
+# Exclusion and inclusion of participants
+# ------------------------------------------
 
 # Include only core members
 table(data$w1_elsa, useNA = "always") # Show how many core members (=1)
@@ -502,9 +257,9 @@ table(data$w1_hedia, useNA = "always") # Show how many people
 data <- subset(data, data$w1_hedia == 0) # Keep only non-stroke at wave 1
 
 
-# --------------------------------------------------
-# Indentify participants with stroke during study
-# --------------------------------------------------
+# ------------------------------------------------------------
+# Select participants with first and no stroke during study
+# ------------------------------------------------------------
 
 # Create stroke variable for wave 2 (newly diagn.)
 data$w2_hediast <- ifelse(data$w2_hedia01 == 8, 1, 0)
@@ -561,13 +316,13 @@ table(data$w6_hediast, useNA = "always")
 # Create new time variables indicating the time of stroke, before and after
 (data <- data %>%
     mutate(w2_time = case_when( # new var w2_time coding second wave in relation to stroke
-       w2_hediast == 1 ~  0,    # if stroke in wave 2, w2_time =  0
-       w3_hediast == 1 ~ -1,    # if stroke in wave 3, w2_time = -1
-       w4_hediast == 1 ~ -2,    # if stroke in wave 4, w2_time = -2
-       w5_hediast == 1 ~ -3,    # if stroke in wave 5, w2_time = -3
-       w6_hediast == 1 ~ -4,    # if stroke in wave 6, w2_time = -4
-       w7_hediast == 1 ~ -5     # if stroke in wave 7, w2_time = -5
-     )))
+      w2_hediast == 1 ~  0,    # if stroke in wave 2, w2_time =  0
+      w3_hediast == 1 ~ -1,    # if stroke in wave 3, w2_time = -1
+      w4_hediast == 1 ~ -2,    # if stroke in wave 4, w2_time = -2
+      w5_hediast == 1 ~ -3,    # if stroke in wave 5, w2_time = -3
+      w6_hediast == 1 ~ -4,    # if stroke in wave 6, w2_time = -4
+      w7_hediast == 1 ~ -5     # if stroke in wave 7, w2_time = -5
+    )))
 
 (data <- data %>%
     mutate(w3_time = case_when( # new var w3_time
@@ -626,10 +381,177 @@ data_nostroke <- subset(data_full, n_strokes == 0)
 # Merge data again
 data <- bind_rows(data, data_nostroke)
 
+
+# ---------------------------------------------
+# Recode and prepare all relevant variables
+# ---------------------------------------------
+ 
+# Age
+# ------
+# Recode age variable; 109 adults aged > 89 have age coded as 99;
+# these are set as missings
+data$w1_dhager[data$w1_dhager == 99] <- NA
+ 
+# Sex and Smoking
+# ------------------
+# Recode all binary variables to 0 (no) and 1 (yes); before 1 (yes), 2 (no)
+for (i in names(data[,c(grep("w1_dhsex", colnames(data)), # 0 = female
+                        grep("w1_heska", colnames(data))
+)])) {
+  data[[i]][data[[i]]==2] <- 0}
+ 
+# Ethnicity
+# ------------
+# Recode ethnicity so "white" is coded as 1 and "non-white" as 0
+data$w0_ethni <- ifelse(data$w0_ethnicr == 1, 1, 0)
+ 
+# Education
+# ------------
+# Re-code education variable (higher education? (yes / no))
+data$w0_topqual2[data$w0_topqual2 == 6] <- NA # recode foreign / other qual to NA
+data$w0_topqual2[data$w0_topqual2 == 8] <- NA # recode full-time students to NA
+data$w0_educ <- ifelse(data$w0_topqual2 == 1, 1, 0)
+
+# Hypertension
+# ---------------
+# Create hypertension variable from CVD-variables at wave 1
+data$w1_hypt <- ifelse(data$w1_hedia01 == 1, 1, 0)
+data$w1_hypt[data$w1_hedia02 == 1 | data$w1_hedia03 == 1 | data$w1_hedia04 == 1 |
+               data$w1_hedia05 == 1 | data$w1_hedia06 == 1 | data$w1_hedia07 == 1 |
+               data$w1_hedia08 == 1 | data$w1_hedia09 == 1] <- 1
+
+# Diabetes
+# --------------
+# Create diabetes variable from CVD-variables at wave 1
+data$w1_diab <- ifelse(data$w1_hedia01 == 7, 1, 0)
+data$w1_diab[data$w1_hedia02 == 7 | data$w1_hedia03 == 7 | data$w1_hedia04 == 7 |
+               data$w1_hedia05 == 7 | data$w1_hedia06 == 7 | data$w1_hedia07 == 7 |
+               data$w1_hedia08 == 7 | data$w1_hedia09 == 7] <- 1
+
+# Depressive symptoms (CESD, 8 items)
+# -------------------------------------------
+
+# Recode items to dummies (0 = no, 1 = yes)
+for (i in names(data[,c(grep("psced", colnames(data)))])) {
+  data[[i]][data[[i]] == 2] <- 0}
+
+# Reverse item d 
+data$w2_pscedd_r <- 1 - data$w2_pscedd
+data$w3_pscedd_r <- 1 - data$w3_pscedd
+data$w4_pscedd_r <- 1 - data$w4_pscedd
+data$w5_pscedd_r <- 1 - data$w5_pscedd
+data$w6_pscedd_r <- 1 - data$w6_pscedd
+data$w7_pscedd_r <- 1 - data$w7_pscedd
+
+# Reverse item f 
+data$w2_pscedf_r <- 1 - data$w2_pscedf
+data$w3_pscedf_r <- 1 - data$w3_pscedf
+data$w4_pscedf_r <- 1 - data$w4_pscedf
+data$w5_pscedf_r <- 1 - data$w5_pscedf
+data$w6_pscedf_r <- 1 - data$w6_pscedf
+data$w7_pscedf_r <- 1 - data$w7_pscedf
+
+# Select all CES-D items for each wave 
+w2_dep_items <- data[,c("w2_psceda", "w2_pscedb"  , "w2_pscedc", "w2_pscedd_r", 
+                        "w2_pscede", "w2_pscedf_r", "w2_pscedg", "w2_pscedh")] # wave 2
+w3_dep_items <- data[,c("w3_psceda", "w3_pscedb"  , "w3_pscedc", "w3_pscedd_r", 
+                        "w3_pscede", "w3_pscedf_r", "w3_pscedg", "w3_pscedh")] # wave 3
+w4_dep_items <- data[,c("w4_psceda", "w4_pscedb"  , "w4_pscedc", "w4_pscedd_r", 
+                        "w4_pscede", "w4_pscedf_r", "w4_pscedg", "w4_pscedh")] # wave 4
+w5_dep_items <- data[,c("w5_psceda", "w5_pscedb"  , "w5_pscedc", "w5_pscedd_r", 
+                        "w5_pscede", "w5_pscedf_r", "w5_pscedg", "w5_pscedh")] # wave 5
+w6_dep_items <- data[,c("w6_psceda", "w6_pscedb"  , "w6_pscedc", "w6_pscedd_r", 
+                        "w6_pscede", "w6_pscedf_r", "w6_pscedg", "w6_pscedh")] # wave 6
+w7_dep_items <- data[,c("w7_psceda", "w7_pscedb"  , "w7_pscedc", "w7_pscedd_r", 
+                        "w7_pscede", "w7_pscedf_r", "w7_pscedg", "w7_pscedh")] # wave 7
+
+# Calculate sum score of depressive symptoms (people with missing values are excluded)
+data$w2_dep_sum <- rowSums(w2_dep_items)
+data$w3_dep_sum <- rowSums(w3_dep_items)
+data$w4_dep_sum <- rowSums(w4_dep_items)
+data$w5_dep_sum <- rowSums(w5_dep_items)
+data$w6_dep_sum <- rowSums(w6_dep_items)
+data$w7_dep_sum <- rowSums(w7_dep_items)
+
+# Mobility limitations
+# -----------------------
+
+# Get disability data from wave 2 (13 items) and recode items
+for (i in names(data[,c(grep("headb", colnames(data)))])) {
+  data[[i]] <- data[[i]] %>% dplyr::recode(., 
+                                           '96' = 0,
+                                           '1'  = 1,
+                                           '2'  = 1,
+                                           '3'  = 1,
+                                           '4'  = 1,
+                                           '5'  = 1,
+                                           '6'  = 1,
+                                           '7'  = 1,
+                                           '8'  = 1,
+                                           '9'  = 1,
+                                           '10' = 1,
+                                           '11' = 1,
+                                           '12' = 1,
+                                           '13' = 1)
+}
+
+# Select all ADL items for each wave
+w2_adl_items <- data[,c( "w2_headb01", "w2_headb02", "w2_headb03", "w2_headb04", "w2_headb05", 
+                         "w2_headb06", "w2_headb07", "w2_headb08", "w2_headb09", "w2_headb10",
+                         "w2_headb11", "w2_headb12", "w2_headb13")] # wave 2
+
+w3_adl_items <- data[,c( "w3_headldr", "w3_headlwa", "w3_headlba", "w3_headlea", "w3_headlbe", 
+                         "w3_headlwc", "w3_headlma", "w3_headlpr", "w3_headlsh", "w3_headlph", 
+                         "w3_headlme", "w3_headlho", "w3_headlmo")] # wave 3
+
+w4_adl_items <- data[,c( "w4_headldr", "w4_headlwa", "w4_headlba", "w4_headlea", "w4_headlbe", 
+                         "w4_headlwc", "w4_headlma", "w4_headlpr", "w4_headlsh", "w4_headlph", 
+                         "w4_headlme", "w4_headlho", "w4_headlmo")] # wave 4
+
+w5_adl_items <- data[,c( "w5_headldr", "w5_headlwa", "w5_headlba", "w5_headlea", "w5_headlbe", 
+                         "w5_headlwc", "w5_headlma", "w5_headlpr", "w5_headlsh", "w5_headlph", 
+                         "w5_headlme", "w5_headlho", "w5_headlmo")] # wave 5
+
+w6_adl_items <- data[,c( "w6_headldr", "w6_headlwa", "w6_headlba", "w6_headlea", "w6_headlbe", 
+                         "w6_headlwc", "w6_headlma", "w6_headlpr", "w6_headlsh", "w6_headlph", 
+                         "w6_headlme", "w6_headlho", "w6_headlmo")] # wave 6
+
+w7_adl_items <- data[,c( "w7_headldr", "w7_headlwa", "w7_headlba", "w7_headlea", "w7_headlbe", 
+                         "w7_headlwc", "w7_headlma", "w7_headlpr", "w7_headlsh", "w7_headlph", 
+                         "w7_headlme", "w7_headlho", "w7_headlmo")] # wave 7
+
+# Calculate sum scores for each wave
+data$w2_adl_mean <- rowSums(w2_adl_items, na.rm = T)
+data$w3_adl_mean <- rowSums(w3_adl_items)
+data$w4_adl_mean <- rowSums(w4_adl_items)
+data$w5_adl_mean <- rowSums(w5_adl_items)
+data$w6_adl_mean <- rowSums(w6_adl_items)
+data$w7_adl_mean <- rowSums(w7_adl_items)
+
+
+# Activities of daily living
+# -----------------------------
+
+
+# Memory score
+# ---------------
+
+
+
+
 # ---------------
 # Reformat data
 # ---------------
 
+# Recode some variables as factors for imputation
+data$w0_ethni <- as.factor(data$w0_ethni)
+data$w1_dhsex <- as.factor(data$w1_dhsex)
+data$w0_educ  <- as.factor(data$w0_educ)
+data$w1_hypt  <- as.factor(data$w1_hypt)
+data$w1_heska <- as.factor(data$w1_heska)
+data$w1_diab  <- as.factor(data$w1_diab)
+
+# Reduce dataframe to relevant variables
 data_red <- 
   data[,c("idauniq"    , "w1_dhsex"   , "w0_ethni"   , "w0_educ"    , "w1_dhager"  , "n_strokes"  ,
           "w1_hypt"    , "w1_heska"   , "w1_diab"    , "w1_scptr"   , "w0_bmival" ,
