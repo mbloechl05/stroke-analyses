@@ -2,16 +2,6 @@
 ##  Data preprocessing 
 ## =====================
 
-# TO DO:
-# Exclude people with stroke at wave 7?
-# Exclude people with other diseases at baseline? 
-# Exclude people with multiple strokes (I think answer was yes)
-# How do I code time with respect to stroke? 
-
-# Check interviews by proxy and so on
-# Check dates of the stroke if available > select appropriate data here!
-
-
 # clean work space
 rm(list = ls()) 
 
@@ -52,19 +42,37 @@ wave_0_c  <- wave_0_c[,c("idauniq", "ager", "educend", "topqual2", "bmival", "et
 
 wave_1_c  <- wave_1_c[,c("idauniq", "elsa", "dhsex", "dhager", "fqethnr", "indoc",
                          "heska", "scptr", "scghqa", "scghqb",
-                         # CVD variables
+                         # cvd variables
                          "hedia01", "hedia02", "hedia03", "hedia04", "hedia05", "hedia06", 
-                         "hedia07", "hedia08", "hedia09", "hedia10")]
+                         "hedia07", "hedia08", "hedia09", "hedia10",
+                         # mobility variables
+                         "heada01", "heada02", "heada03", "heada04", "heada05", 
+                         "heada06", "heada07", "heada08", "heada09", "heada10",
+                         # adl variables
+                         "headb01", "headb02", "headb03", "headb04", "headb05", 
+                         "headb06", "headb07", "headb08", "headb09", "headb10",
+                         "headb11", "headb12", "headb13",
+                         # memory 
+                         "cflisen", "cflisd",
+                         # despressive symptoms
+                         "psceda", "pscedb", "pscedc", "pscedd", "pscede", "pscedf", 
+                         "pscedg", "pscedh"
+                         )]
 
 wave_2_c  <- wave_2_c[,c("idauniq", "fqethnr", "indager",
-                         # CVD variables
+                         # cvd variables
                          "hedia01", "hedia02", "hedia03", "hedia04", "hedia05", "hedia06", 
                          "hedia07", "hedia08", "hedia09", 
                          "w2indout", "HeAge", "HeAgeR", "HeAgeRY", "Henmst",
-                         # IADL variables
+                         # mobility variables
+                         "heada01", "heada02", "heada03", "heada04", "heada05", 
+                         "heada06", "heada07", "heada08", "heada09", "heada10",
+                         # adl variables
                          "headb01", "headb02", "headb03", "headb04", "headb05", "headb06", 
                          "headb07", "headb08", "headb09", "headb10", "headb11", "headb12", 
                          "headb13",
+                         # memory
+                         "CfLisEn", "CfLisD",
                          # depressive symptoms
                          "PScedA", "PScedB", "PScedC", "PScedD", "PScedE", "PScedF", 
                          "PScedG", "PScedH",
@@ -80,6 +88,13 @@ wave_3_c  <- wave_3_c[,c("idauniq", "w3indout", "indager",
                          "scghqk", "scghql", 
                          # stroke newly diagnosed
                          "hediast", "dhedimst", "heage", "heager", "heagery", "henmst",
+                         # mobility variables
+                         "hemobwa", "hemobsi", "hemobch", "hemobcs", "hemobcl", 
+                         "hemobst", "hemobre", "hemobpu", "hemobli", "hemobpi", 
+                         # adl variables
+                         "headldr", "headlwa", "headlba", "headlea", "headlbe", "headlwc", 
+                         # memory 
+                         "cflisen", "cflisd",
                          # depressive symptoms
                          "psceda", "pscedb", "pscedc", "pscedd", "pscede", "pscedf", 
                          "pscedg", "pscedh",
@@ -91,6 +106,13 @@ wave_3_c  <- wave_3_c[,c("idauniq", "w3indout", "indager",
 wave_4_c  <- wave_4_c[,c("idauniq", "indager", "outindw4",
                          # stroke newly diagnosed
                          "hediast", "hedimst", "heage", "heager", "heagery", "henmst",
+                         # mobility variables
+                         "hemobwa", "hemobsi", "hemobch", "hemobcs", "hemobcl", 
+                         "hemobst", "hemobre", "hemobpu", "hemobli", "hemobpi", 
+                         # adl variables
+                         "headldr", "headlwa", "headlba", "headlea", "headlbe", "headlwc", 
+                         # memory 
+                         "cflisen", "cflisd",
                          # depressive symptoms
                          "psceda", "pscedb", "pscedc", "pscedd", "pscede", "pscedf", 
                          "pscedg", "pscedh", 
@@ -102,6 +124,13 @@ wave_4_c  <- wave_4_c[,c("idauniq", "indager", "outindw4",
 wave_5_c  <- wave_5_c[,c("idauniq", "indager", "w5indout", 
                          # stroke newly diagnosed
                          "hediast", "hedimst", "heage", "heager", "heagery", "henmst",
+                         # mobility variables
+                         "hemobwa", "hemobsi", "hemobch", "hemobcs", "hemobcl", 
+                         "hemobst", "hemobre", "hemobpu", "hemobli", "hemobpi", 
+                         # adl variables
+                         "headldr", "headlwa", "headlba", "headlea", "headlbe", "headlwc", 
+                         # memory 
+                         "cflisen", "cflisd",
                          # depressive symptoms
                          "psceda", "pscedb", "pscedc", "pscedd" , "pscede" , "pscedf", 
                          "pscedg", "pscedh", 
@@ -113,6 +142,13 @@ wave_5_c  <- wave_5_c[,c("idauniq", "indager", "w5indout",
 wave_6_c  <- wave_6_c[,c("idauniq", "indager", "w6indout",
                          # stroke newly diagnosed
                          "hediast", "hedimst", "HeAge", "HeAgeR", "HeAgeRY", "HeNmSt",
+                         # mobility variables
+                         "hemobwa", "hemobsi", "hemobch", "hemobcs", "hemobcl", 
+                         "hemobst", "hemobre", "hemobpu", "hemobli", "hemobpi", 
+                         # adl variables
+                         "headldr", "headlwa", "headlba", "headlea", "headlbe", "headlwc", 
+                         # memory 
+                         "CfLisEn", "CfLisD",
                          # depressive symptoms
                          "PScedA", "PScedB", "PScedC", "PScedD" , "PScedE" , "PScedF", 
                          "PScedG", "PScedH", 
@@ -124,6 +160,13 @@ wave_6_c  <- wave_6_c[,c("idauniq", "indager", "w6indout",
 wave_7_c  <- wave_7_c[,c("idauniq", "indager", 
                          # stroke newly diagnosed
                          "hediast", "hedimst", 
+                         # mobility variables
+                         "hemobwa", "hemobsi", "hemobch", "hemobcs", "hemobcl", 
+                         "hemobst", "hemobre", "hemobpu", "hemobli", "hemobpi", 
+                         # adl variables
+                         "headldr", "headlwa", "headlba", "headlea", "headlbe", "headlwc", 
+                         # memory 
+                         "CfLisEn", "CfLisD",
                          # depressive symptoms
                          "PScedA", "PScedB", "PScedC", "PScedD" , "PScedE" , "PScedF", 
                          "PScedG", "PScedH", 
@@ -145,6 +188,18 @@ setnames(wave_7_c,
          old = c("PScedA", "PScedB", "PScedC", "PScedD", "PScedE", "PScedF", "PScedG", "PScedH"), 
          new = c("psceda", "pscedb", "pscedc", "pscedd", "pscede", "pscedf", "pscedg", "pscedh"))
 
+# Harmonise naming of cognition variables across waves (rename waves 2, 6, and 7)
+setnames(wave_2_c, 
+         old = c("CfLisEn", "CfLisD"), 
+         new = c( "cflisen", "cflisd"))
+
+setnames(wave_6_c, 
+         old = c("CfLisEn", "CfLisD"), 
+         new = c( "cflisen", "cflisd"))
+
+setnames(wave_7_c, 
+         old = c("CfLisEn", "CfLisD"), 
+         new = c( "cflisen", "cflisd"))
 
 # Add indicator for the respective wave to each variable (except idauniq)
 wave_0_c <- wave_0_c %>% rename_at(vars(-idauniq), ~ paste0("w0_",.))
@@ -202,101 +257,66 @@ data <- data %>% mutate_all(funs(na_if(., -2)))
 data <- data %>% mutate_all(funs(na_if(., -1)))
 
 
-# # ------------------------------------------------------------
-# # 2) Recode variables demographic variables and co-variates
-# # ------------------------------------------------------------
-# 
-# # 2.1) Age
-# 
-# ### Recode age variable; 109 adults aged > 89 have age coded as 99; 
-# ### these are set as missings
-# data$w1_dhager[data$w1_dhager == 99] <- NA
-# 
-# 
-# # 2.2) Sex and Smoking
-# 
-# ### Recode all binary variables to 0 (no) and 1 (yes); before 1 (yes), 2 (no)
-# for (i in names(data[,c(grep("w1_dhsex", colnames(data)), # 0 = female 
-#                         grep("w1_heska", colnames(data)), # current smoking
-#                         grep("w1_scptr", colnames(data)) # living with someone
-# )])) {
-#   data[[i]][data[[i]]==2] <- 0}
-# 
-# 
-# # 2.3) Ethnicity
-# 
-# ### Recode ethnicity so "white" is coded as 1 and "non-white" as 0
-# data$w0_ethni <- ifelse(data$w0_ethnicr == 1, 1, 0)
-# 
-# 
-# # 2.4) Education
-# 
-# ### Re-code education variable (higher education? (yes / no))
-# data$w0_topqual2[data$w0_topqual2 == 6] <- NA # recode foreign / other qual to NA
-# data$w0_topqual2[data$w0_topqual2 == 8] <- NA # recode full-time students to NA
-# data$w0_educ <- ifelse(data$w0_topqual2 == 1, 1, 0) 
-# 
-# 
-# # 2.5) Hypertension
-# 
-# ### Create hypertension variable from CVD-variables at wave 1
-# data$w1_hypt <- ifelse(data$w1_hedia01 == 1, 1, 0)
-# data$w1_hypt[data$w1_hedia02 == 1 | data$w1_hedia03 == 1 | data$w1_hedia04 == 1 |
-#                data$w1_hedia05 == 1 | data$w1_hedia06 == 1 | data$w1_hedia07 == 1 |
-#                data$w1_hedia08 == 1 | data$w1_hedia09 == 1] <- 1 
-# 
-# 
-# # 2.6) Diabetes
-# 
-# ### Create diabetes variable from CVD-variables at wave 1
-# data$w1_diab <- ifelse(data$w1_hedia01 == 7, 1, 0)
-# data$w1_diab[data$w1_hedia02 == 7 | data$w1_hedia03 == 7 | data$w1_hedia04 == 7 |
-#                data$w1_hedia05 == 7 | data$w1_hedia06 == 7 | data$w1_hedia07 == 7 |
-#                data$w1_hedia08 == 7 | data$w1_hedia09 == 7] <- 1 
-# 
-# 
-# # 2.7) Recode some variables as factors for imputation
-# 
-# data$w0_ethni <- as.factor(data$w0_ethni)
-# data$w1_dhsex <- as.factor(data$w1_dhsex)
-# data$w0_educ  <- as.factor(data$w0_educ)
-# data$w1_hypt  <- as.factor(data$w1_hypt)
-# data$w1_heska <- as.factor(data$w1_heska)
-# data$w1_diab  <- as.factor(data$w1_diab)
-# data$w1_scptr <- as.factor(data$w1_scptr)
-# 
-# 
-# # ---------------------------------------------
-# # 3) Prepare treatment variable: Stroke cases
-# # ---------------------------------------------
-# 
-# # Create variable: did participants report a "stroke ever diagnosed" in wave 1?
-# data$w1_stroke <- ifelse(data$w1_hedia01 == 8, 1, 0)
-# data$w1_stroke[data$w1_hedia02 == 8 | data$w1_hedia03 == 8 | data$w1_hedia04 == 8 |
-#                  data$w1_hedia05 == 8 | data$w1_hedia06 == 8 | data$w1_hedia07 == 8 |
-#                  data$w1_hedia08 == 8 | data$w1_hedia09 == 8] <- 1 
-# 
-# 
-# # # Create stroke: did participants report a "newly diagnosed stroke" in wave 2?
-# # data$w2_stroke <- ifelse(data$w2_hedia01 == 8, 1, 0)
-# # data$w2_stroke[data$w2_hedia02 == 8 | data$w2_hedia03 == 8 | data$w2_hedia04 == 8 |
-# #                  data$w2_hedia05 == 8 | data$w2_hedia06 == 8 | data$w2_hedia07 == 8 |
-# #                  data$w2_hedia08 == 8 | data$w2_hedia09 == 8] <- 1 
-# 
-# # Create variable indicating whether participants had a new stroke 
-# # in wave 2 or 3
-# # data$st_case <- ifelse(data$w1_stroke == 0 & 
-# #                          (data$w2_stroke == 1 | data$w3_hediast == 1), 1, 0)
-# 
-# # data$st_case[data$w1_stroke == 0 | data$w1_stroke  == 1] <- 0
-# # data$st_case[is.na(data$w2_stroke) & is.na(data$w3_hediast)] <- NA
-# # data$st_case[data$w2_stroke  == 0] <- 0
-# # data$st_case[data$w3_hediast == 0] <- 0
-# # #data$st_case[data$w1_stroke == 0 & data$w2_stroke  == 1] <- 1
-# # data$st_case[data$w1_stroke == 0 & data$w3_hediast == 1] <- 1
-# 
-# # How many? 
-# # table(data$st_case, useNA = "always") # 206
+# ------------------------------------------------------------
+# 2) Recode variables demographic variables and co-variates
+# ------------------------------------------------------------
+ 
+# 2.1) Age
+ 
+### Recode age variable; 109 adults aged > 89 have age coded as 99;
+### these are set as missings
+data$w1_dhager[data$w1_dhager == 99] <- NA
+ 
+ 
+# 2.2) Sex and Smoking
+
+### Recode all binary variables to 0 (no) and 1 (yes); before 1 (yes), 2 (no)
+for (i in names(data[,c(grep("w1_dhsex", colnames(data)), # 0 = female
+                        grep("w1_heska", colnames(data))
+)])) {
+  data[[i]][data[[i]]==2] <- 0}
+ 
+ 
+# 2.3) Ethnicity
+
+### Recode ethnicity so "white" is coded as 1 and "non-white" as 0
+data$w0_ethni <- ifelse(data$w0_ethnicr == 1, 1, 0)
+ 
+ 
+# 2.4) Education
+
+### Re-code education variable (higher education? (yes / no))
+data$w0_topqual2[data$w0_topqual2 == 6] <- NA # recode foreign / other qual to NA
+data$w0_topqual2[data$w0_topqual2 == 8] <- NA # recode full-time students to NA
+data$w0_educ <- ifelse(data$w0_topqual2 == 1, 1, 0)
+
+
+# 2.5) Hypertension
+
+### Create hypertension variable from CVD-variables at wave 1
+data$w1_hypt <- ifelse(data$w1_hedia01 == 1, 1, 0)
+data$w1_hypt[data$w1_hedia02 == 1 | data$w1_hedia03 == 1 | data$w1_hedia04 == 1 |
+               data$w1_hedia05 == 1 | data$w1_hedia06 == 1 | data$w1_hedia07 == 1 |
+               data$w1_hedia08 == 1 | data$w1_hedia09 == 1] <- 1
+
+
+# 2.6) Diabetes
+
+### Create diabetes variable from CVD-variables at wave 1
+data$w1_diab <- ifelse(data$w1_hedia01 == 7, 1, 0)
+data$w1_diab[data$w1_hedia02 == 7 | data$w1_hedia03 == 7 | data$w1_hedia04 == 7 |
+               data$w1_hedia05 == 7 | data$w1_hedia06 == 7 | data$w1_hedia07 == 7 |
+               data$w1_hedia08 == 7 | data$w1_hedia09 == 7] <- 1
+
+
+# 2.7) Recode some variables as factors for imputation
+
+data$w0_ethni <- as.factor(data$w0_ethni)
+data$w1_dhsex <- as.factor(data$w1_dhsex)
+data$w0_educ  <- as.factor(data$w0_educ)
+data$w1_hypt  <- as.factor(data$w1_hypt)
+data$w1_heska <- as.factor(data$w1_heska)
+data$w1_diab  <- as.factor(data$w1_diab)
 
 
 # ----------------------------
@@ -401,33 +421,61 @@ data$w6_lon_mean <- rowMeans(w6_lon_items)
 data$w7_lon_mean <- rowMeans(w7_lon_items)
 
 
-# # -------------------------------------------------
-# # 5) Prepare mediator variable: Disability items
-# # -------------------------------------------------
-# 
-# # Get disability data from wave 2 (13 items)
-# pditems.2 <- select(data, contains("w2_headb"))
-# 
-# # Code 96 to 0 and all others to 1
-# # i.e. if people report any endorsement of a disability, the item is coded as
-# pditems.2 <- pditems.2 %>% mutate_all(funs(recode(., '96' = 0, 
-#                                                   '1'  = 1, 
-#                                                   '2'  = 1, 
-#                                                   '3'  = 1, 
-#                                                   '4'  = 1, 
-#                                                   '5'  = 1,
-#                                                   '6'  = 1, 
-#                                                   '7'  = 1, 
-#                                                   '8'  = 1, 
-#                                                   '9'  = 1, 
-#                                                   '10' = 1, 
-#                                                   '11' = 1, 
-#                                                   '12' = 1,
-#                                                   '13' = 1)))
-# 
-# # Calculate sum scores items
-# data$disability <- rowSums(pditems.2, na.rm = T)
-# table(data$disability)
+# -------------------------------------------------
+# 5) Prepare mediator variable: Disability items
+# -------------------------------------------------
+
+# Get disability data from wave 2 (13 items) and recode items
+for (i in names(data[,c(grep("headb", colnames(data)))])) {
+  data[[i]] <- data[[i]] %>% dplyr::recode(., 
+                                           '96' = 0,
+                                           '1'  = 1,
+                                           '2'  = 1,
+                                           '3'  = 1,
+                                           '4'  = 1,
+                                           '5'  = 1,
+                                           '6'  = 1,
+                                           '7'  = 1,
+                                           '8'  = 1,
+                                           '9'  = 1,
+                                           '10' = 1,
+                                           '11' = 1,
+                                           '12' = 1,
+                                           '13' = 1)
+}
+
+# Select all ADL items for each wave
+w2_adl_items <- data[,c( "w2_headb01", "w2_headb02", "w2_headb03", "w2_headb04", "w2_headb05", 
+                         "w2_headb06", "w2_headb07", "w2_headb08", "w2_headb09", "w2_headb10",
+                         "w2_headb11", "w2_headb12", "w2_headb13")] # wave 2
+
+w3_adl_items <- data[,c( "w3_headldr", "w3_headlwa", "w3_headlba", "w3_headlea", "w3_headlbe", 
+                         "w3_headlwc", "w3_headlma", "w3_headlpr", "w3_headlsh", "w3_headlph", 
+                         "w3_headlme", "w3_headlho", "w3_headlmo")] # wave 3
+
+w4_adl_items <- data[,c( "w4_headldr", "w4_headlwa", "w4_headlba", "w4_headlea", "w4_headlbe", 
+                         "w4_headlwc", "w4_headlma", "w4_headlpr", "w4_headlsh", "w4_headlph", 
+                         "w4_headlme", "w4_headlho", "w4_headlmo")] # wave 4
+
+w5_adl_items <- data[,c( "w5_headldr", "w5_headlwa", "w5_headlba", "w5_headlea", "w5_headlbe", 
+                         "w5_headlwc", "w5_headlma", "w5_headlpr", "w5_headlsh", "w5_headlph", 
+                         "w5_headlme", "w5_headlho", "w5_headlmo")] # wave 5
+
+w6_adl_items <- data[,c( "w6_headldr", "w6_headlwa", "w6_headlba", "w6_headlea", "w6_headlbe", 
+                         "w6_headlwc", "w6_headlma", "w6_headlpr", "w6_headlsh", "w6_headlph", 
+                         "w6_headlme", "w6_headlho", "w6_headlmo")] # wave 6
+
+w7_adl_items <- data[,c( "w7_headldr", "w7_headlwa", "w7_headlba", "w7_headlea", "w7_headlbe", 
+                         "w7_headlwc", "w7_headlma", "w7_headlpr", "w7_headlsh", "w7_headlph", 
+                         "w7_headlme", "w7_headlho", "w7_headlmo")] # wave 7
+
+# Calculate sum scores for each wave
+data$w2_adl_mean <- rowSums(w2_adl_items, na.rm = T)
+data$w3_adl_mean <- rowSums(w3_adl_items)
+data$w4_adl_mean <- rowSums(w4_adl_items)
+data$w5_adl_mean <- rowSums(w5_adl_items)
+data$w6_adl_mean <- rowSums(w6_adl_items)
+data$w7_adl_mean <- rowSums(w7_adl_items)
 
 
 # ----------------------------
@@ -451,7 +499,7 @@ data$w1_hedia[data$w1_hedia09 == 8] <- 1
 data$w1_hedia[data$w1_hedia10 == 8] <- 1
 
 table(data$w1_hedia, useNA = "always") # Show how many people
-data <- subset(data, data$w1_hedia == 0) # Keep only non-stroke
+data <- subset(data, data$w1_hedia == 0) # Keep only non-stroke at wave 1
 
 
 # --------------------------------------------------
@@ -474,15 +522,20 @@ table(data$w3_hediast, useNA = "always")
 table(data$w4_hediast, useNA = "always")
 table(data$w5_hediast, useNA = "always")
 table(data$w6_hediast, useNA = "always")
+table(data$w7_hediast, useNA = "always")
 
-
+# Create variable indicating number of strokes within study
 data$n_strokes <- 
-  rowSums(data[c("w2_hediast", "w3_hediast", "w4_hediast", "w5_hediast", "w6_hediast")], 
+  rowSums(data[c("w2_hediast", "w3_hediast", "w4_hediast", "w5_hediast", 
+                 "w6_hediast", "w7_hediast")], 
           na.rm = T)
 table(data$n_strokes, useNA = "always")
 
-# Only include people with 1 stroke during study
-data <- subset(data, n_strokes == 1) # 411 
+# Change name of full data set to data_full
+data_full <- data
+
+# Select only people with 1 stroke during study
+data <- subset(data_full, n_strokes == 1) # 411 
 
 # Check peoples dates for their stroke in each wave
 table(data$w2_HeAgeRY, useNA = "always") 
@@ -497,6 +550,13 @@ data <- subset(data, data$w3_heagery > 2003 | is.na(data$w3_heagery))
 data <- subset(data, data$w4_heagery > 2005 | is.na(data$w4_heagery))  
 data <- subset(data, data$w5_heagery > 2007 | is.na(data$w5_heagery))  
 data <- subset(data, data$w6_HeAgeRY > 2009 | is.na(data$w6_HeAgeRY)) 
+
+# At which wave did stroke occur? 
+table(data$w2_hediast, useNA = "always")
+table(data$w3_hediast, useNA = "always")
+table(data$w4_hediast, useNA = "always")
+table(data$w5_hediast, useNA = "always")
+table(data$w6_hediast, useNA = "always")
 
 # Create new time variables indicating the time of stroke, before and after
 (data <- data %>%
@@ -560,34 +620,52 @@ data <- subset(data, data$w6_HeAgeRY > 2009 | is.na(data$w6_HeAgeRY))
       w7_hediast == 1 ~  0
     )))
 
+# Select only people with 0 strokes during study
+data_nostroke <- subset(data_full, n_strokes == 0) 
+
+# Merge data again
+data <- bind_rows(data, data_nostroke)
+
 # ---------------
 # Reformat data
 # ---------------
 
 data_red <- 
-  data[,c("idauniq", 
+  data[,c("idauniq"    , "w1_dhsex"   , "w0_ethni"   , "w0_educ"    , "w1_dhager"  , "n_strokes"  ,
+          "w1_hypt"    , "w1_heska"   , "w1_diab"    , "w1_scptr"   , "w0_bmival" ,
           "w2_time"    , "w3_time"    , "w4_time"    , "w5_time"    , "w6_time"    , "w7_time"    ,
           "w2_hediast" , "w3_hediast" , "w4_hediast" , "w5_hediast" , "w6_hediast" , "w7_hediast" , 
           "w2_dep_sum" , "w3_dep_sum" , "w4_dep_sum" , "w5_dep_sum" , "w6_dep_sum" , "w7_dep_sum" ,
           "w2_swl_mean", "w3_swl_mean", "w4_swl_mean", "w5_swl_mean", "w6_swl_mean", "w7_swl_mean",
-          "w2_lon_mean", "w3_lon_mean", "w4_lon_mean", "w5_lon_mean", "w6_lon_mean", "w7_lon_mean")]
+          "w2_lon_mean", "w3_lon_mean", "w4_lon_mean", "w5_lon_mean", "w6_lon_mean", "w7_lon_mean", 
+          "w2_adl_mean", "w3_adl_mean", "w4_adl_mean", "w5_adl_mean", "w6_adl_mean", "w7_adl_mean", 
+          "w2_psceda"  , "w2_pscedb", "w2_pscedd", "w2_pscede", "w2_pscedf", "w2_pscedg", "w2_pscedh", 
+          "w3_psceda"  , "w3_pscedb", "w3_pscedd", "w3_pscede", "w3_pscedf", "w3_pscedg", "w3_pscedh",
+          "w4_psceda"  , "w4_pscedb", "w4_pscedd", "w4_pscede", "w4_pscedf", "w4_pscedg", "w4_pscedh",
+          "w5_psceda"  , "w5_pscedb", "w5_pscedd", "w5_pscede", "w5_pscedf", "w5_pscedg", "w5_pscedh", 
+          "w6_psceda"  , "w6_pscedb", "w6_pscedd", "w6_pscede", "w6_pscedf", "w6_pscedg", "w6_pscedh",
+          "w7_psceda"  , "w7_pscedb", "w7_pscedd", "w7_pscede", "w7_pscedf", "w7_pscedg", "w7_pscedh")]
 
+ # shape to long format --> might be pointless in the future 
 data_long <- reshape(data_red, direction = "long",
-                     idvar = "idauniq", 
+                     idvar = "idauniq",
                      varying = list(c("w2_hediast", "w3_hediast", "w4_hediast", "w5_hediast", 
                                       "w6_hediast", "w7_hediast"),
                                     grep("time",     colnames(data), value = T), 
                                     grep("dep_sum",  colnames(data), value = T), 
                                     grep("swl_mean", colnames(data), value = T), 
-                                    grep("lon_mean", colnames(data), value = T)), 
+                                    grep("lon_mean", colnames(data), value = T), 
+                                    grep("adl_mean", colnames(data), value = T)), 
                      timevar = "wave", 
                      times = c("w2", "w3", "w4", "w5", "w6", "w7"), 
-                     v.names = c("stroke", "time", "depress", "lifesat", "loneli"))
-                  
+                     v.names = c("stroke", "time", "depress", "lifesat", "loneli", "adl"))
+
+# 
+data_long_stroke <- subset(data_long, n_stroke == 1)
+
 # ---------------------------
 # Save preprocessed data
 # ---------------------------
 
-# save(wave0, wave1, wave2, wave3, data, data_excl,  
-#     file = "data/elsa/processed/elsa_proc_data.RData")
+save(data_long, data_red, file = "data/processed/proc_data.RData")
 

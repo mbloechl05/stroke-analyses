@@ -1,228 +1,211 @@
-## ================
-##  Data analysis
-## ================
+## =================================
+##  Descriptive data analysis
+## =================================
 
 # load packages
 library(ggplot2)
-library(Rmisc) # for summarySEwithin
+library(dplyr)
+library(tidyr)  # for fill()
+library(Rmisc) # for summarySEwithin()
 library(reshape)
-library(lme4)
-library(lmerTest)
-library(car) # for recode
-library(arm) # for se.fixef
-
-# -----------------------------------------------
-# Modelling time courses with respect to stroke
-# -----------------------------------------------
-
-# Create Dummy variables for time points (waves)
-
-data_long$dummy_mins4 <- ifelse(data_long$time == -4, 1, 0) 
-data_long$dummy_mins3 <- ifelse(data_long$time == -3, 1, 0)
-data_long$dummy_mins2 <- ifelse(data_long$time == -2, 1, 0) 
-data_long$dummy_mins1 <- ifelse(data_long$time == -1, 1, 0) 
-data_long$dummy_plus1 <- ifelse(data_long$time ==  1, 1, 0) 
-data_long$dummy_plus2 <- ifelse(data_long$time ==  2, 1, 0)
-data_long$dummy_plus3 <- ifelse(data_long$time ==  3, 1, 0)
-data_long$dummy_plus4 <- ifelse(data_long$time ==  4, 1, 0)
-data_long$dummy_plus5 <- ifelse(data_long$time ==  5, 1, 0) 
-
-# Depressive symptoms
-# --------------------
-
-# Define random-intercept-only model (reference = stroke 0)
-m_depress <- depress ~ 1 + dummy_mins4 + dummy_mins3 + dummy_mins2 + dummy_mins1 + dummy_plus1 + 
-  dummy_plus2 + dummy_plus3 + dummy_plus4 + dummy_plus5 + (1|idauniq)
-
-# Fit model
-fit_depress <- lmer(m_dep, data = data_long, REML = TRUE)
-
-# Show model results
-summary(fit_depress)
-
-
-# Life satisfaction
-# --------------------
-
-# Define random-intercept-only model (reference = stroke 0)
-m_lifesat <- lifesat ~ 1 + dummy_mins4 + dummy_mins3 + dummy_mins2 + dummy_mins1 + dummy_plus1 + 
-  dummy_plus2 + dummy_plus3 + dummy_plus4 + dummy_plus5 + (1|idauniq)
-
-# Fit model
-fit_lifesat <- lmer(m_lifesat, data = data_long, REML = TRUE)
-
-# Show model results
-summary(fit_lifesat)
-
-
-# ---------------------
-# Model-implied plots
-# ---------------------
-
-# Depressive symptoms
-# ---------------------
+library(car) # for recode()
+library(mitml)
+library(tibble)
+library(mitml)
+library(cobalt)  # for bal.tab()
+library(forcats) # for fct_rev()
+
+# Source helper function describeBy_imp()
+source("analyses/post-stroke-depression/fun_describeBy_imp.R")
+
+# Load data 
+load("data/processed/proc_data.RData") # preprocessed
+load("data/processed/matched_data.RData") # matched
+load("data/processed/imp_data.RData") # imputed
+impdat <- mice::complete(imp, action = "long", include = FALSE)
+
+
+# --------------------------------
+# 2) Check balance diagnostics
+# --------------------------------
+
+# 2.1) Data wrangling
+# ----------------------
+
+# First, unlist list of lists
+for (i in seq(matchlist)) 
+  assign(paste0("matched",i), matchlist[[i]]$matched)
+
+# List again lists of similar type (matched)
+matchedlist <- list(matched1,  matched2,  matched3,  matched4,  matched5,  
+                    matched6,  matched7,  matched8,  matched9,  matched10, 
+                    matched11, matched12, matched13, matched14, matched15, 
+                    matched16, matched17, matched18, matched19, matched20)
+
+
+# 2.2) Summary of matching procedure in each data set
+# -----------------------------------------------------
+
+lapply(matchedlist, summary)
+
+
+# 2.3) Figure S2
+# ---------------
+
+### Create and save plots of effect sizes before and after matching
+for (i in seq(matchedlist)) {
+  psm.bal             <- bal.tab(matchedlist[[i]], binary = "std", un = T)
+  psm.bal$Balance$var <- seq.int(nrow(psm.bal$Balance))
+  psm.bal             <- psm.bal$Balance[2:10,]
+  psm.bal$var         <- as.factor(psm.bal$var)
+  psm.bal$var         <- fct_rev(as_factor(psm.bal$var))
+  psm.n.cont          <- matchedlist[[i]]$nn[[2]]
+  psm.n.treat         <- matchedlist[[i]]$nn[[6]]
+  # Start saving plot
+  png(paste0("figures/bal/",i,".png"), width = 7.5, height = 6, 
+      units = 'in', res = 700)
+  # Define general graphic settings
+  par(mfrow = c(1,1))
+  par(mar = c(5,10,4,3))
+  # Plot Unadjusted standardised differences 
+  plot(psm.bal$Diff.Un, psm.bal$var, pch = 19, cex = 1.3, col = "#DC5474",
+       xlim = c(-0.5,1), xlab = "Standardised mean difference", 
+       yaxt = "n", ylab = "", cex.lab = 1.5, cex.axis = 1.5,
+       frame.plot = F)
+  # Add lines to the plot
+  abline(v =  0.00, col = "black" , lwd = 1, lty = 1)
+  abline(v = -0.10, col = "black" , lwd = 1, lty = 3)
+  abline(v =  0.10, col = "black" , lwd = 1, lty = 3)
+  abline(h =  1   , col = "grey70", lwd = 1, lty = 3)
+  abline(h =  2   , col = "grey70", lwd = 1, lty = 3)
+  abline(h =  3   , col = "grey70", lwd = 1, lty = 3)
+  abline(h =  4   , col = "grey70", lwd = 1, lty = 3)
+  abline(h =  5   , col = "grey70", lwd = 1, lty = 3)
+  abline(h =  6   , col = "grey70", lwd = 1, lty = 3)
+  abline(h =  7   , col = "grey70", lwd = 1, lty = 3)
+  abline(h =  8   , col = "grey70", lwd = 1, lty = 3)
+  abline(h =  9   , col = "grey70", lwd = 1, lty = 3)
+  #  abline(h = 10, col = "grey70", lwd = 1, lty = 3)
+  par(new = TRUE)
+  # Plot adjusted standardised differences on top 
+  plot(psm.bal$Diff.Adj, psm.bal$var, pch = 19, cex = 1.3, col = "#1B3A4E",
+       xlim = c(-0.5,1), xlab = "", 
+       yaxt = "n", ylab = "", cex.lab = 1.5, cex.axis = 1.5,
+       frame.plot = F)
+  # Add title, subtitle, and y-axis text to the plot
+  mtext(paste("Matched: Stroke N =",psm.n.treat,"; Control N =", 
+              psm.n.cont), 3, line = 1.3, cex = 1.4)
+  mtext(paste("Sample", i),  3, line = 2.7, cex = 1.8, font = 2)
+  axis(2, at = 1:9, labels = F, tck = 0)
+  text(y = seq(1, 9, by = 1), par("usr")[1],
+       labels = c("Cohabiting", "Hypertension", "BMI",
+                  "Diabetes", "Smoking", "Education", "Ethnicity", "Gender", "Age"),
+       srt = 0, pos = 2, xpd = TRUE, cex = 1.4)
+  # Add legend to third plot
+  if(i == 3){
+    legend(0.39, 2.5, legend=c("Before matching", "After matching"), 
+           col = c("#DC5474", "#1B3A4E"), pch = c(19, 19), cex = 1.2, box.lty = 1)
+  } else {NULL}
+  # End saving plot
+  dev.off()
+}
+
+
+# 2.4) Additional figures: jitter plots 
+
+for (i in seq(matchedlist)) {
+  png(paste0("figures/jitter/",i,".png"), width = 6, height = 6, 
+      units = 'in', res = 300)
+  plot(matchedlist[[i]], type = "jitter")
+  dev.off()
+}
+
+
+# 2.5) Additional figures: histograms 
+
+for (i in seq(matchedlist)) {
+  png(paste0("figures/hist/",i,".png"), width = 6, height = 6, 
+      units = 'in', res = 300)
+  plot(matchedlist[[i]], type = "hist")
+  dev.off()
+}
+
+# -------------------------------------
+#  Descriptive statistics (Table 2)
+# -------------------------------------
+
+# Descriptive stats for observed, imputded data by caseness 
+
+### Calculate descriptives
+obs.age <- describeBy_imp("w1_dhager", impdat, binary = F, strokevar = "n_strokes")
+obs.gen <- describeBy_imp("w1_dhsex",  impdat, binary = T, strokevar = "n_strokes")
+obs.eth <- describeBy_imp("w0_ethni",  impdat, binary = T, strokevar = "n_strokes")
+obs.edu <- describeBy_imp("w0_educ",   impdat, binary = T, strokevar = "n_strokes")
+obs.smo <- describeBy_imp("w1_heska",  impdat, binary = T, strokevar = "n_strokes")
+obs.bmi <- describeBy_imp("w0_bmival", impdat, binary = F, strokevar = "n_strokes")
+obs.hyp <- describeBy_imp("w1_hypt",   impdat, binary = T, strokevar = "n_strokes")
+obs.dia <- describeBy_imp("w1_diab",   impdat, binary = T, strokevar = "n_strokes")
+obs.liv <- describeBy_imp("w1_scptr",  impdat, binary = T, strokevar = "n_strokes")
+
+### Show all descriptive stats in list
+list("age"        = i.age, 
+     "gender"     = i.gen, 
+     "ethnicity"  = i.eth, 
+     "education"  = i.edu, 
+     "smoking"    = i.smo, 
+     "bmi"        = i.bmi, 
+     "hypert"     = i.hyp, 
+     "diabetes"   = i.dia, 
+     "cohab_marr" = i.liv)
+
+
+# 1.2) Descriptive stats for matched, imputded data by caseness 
+
+### Unlist list of dataframe list to obtain dataframes in wide format and 
+for (i in seq(matchlist))
+  assign(paste0("data.match.w",i), matchlist[[i]]$data.match.w)
+
+### Re-list them as mitml list
+datamatchwlist <- as.mitml.list(list(data.match.w1,  data.match.w2, 
+                                     data.match.w3,  data.match.w4, 
+                                     data.match.w5,  data.match.w6, 
+                                     data.match.w7,  data.match.w8, 
+                                     data.match.w9,  data.match.w10, 
+                                     data.match.w11, data.match.w12, 
+                                     data.match.w13, data.match.w14, 
+                                     data.match.w15, data.match.w16, 
+                                     data.match.w17, data.match.w18, 
+                                     data.match.w19, data.match.w20))
+
+### Rename list indices for mitml list
+names(datamatchwlist) <- c("1" , "2" , "3" , "4" , "5" , "6" , "7" , "8" , "9" , "10", 
+                           "11", "12", "13", "14", "15", "16", "17", "18", "19", "20")
+
+### Stack data frames from list onto each other
+match_data_stacked <- map2_df(datamatchwlist, names(datamatchwlist), ~ 
+                                mutate(.x, .imp = .y))
+
+### Now finally, compute descriptives
+mat.age <- describeBy_imp("w1_dhager", match_data_stacked, binary = F, strokevar = "n_strokes")
+mat.gen <- describeBy_imp("w1_dhsex",  match_data_stacked, binary = T, strokevar = "n_strokes")
+mat.eth <- describeBy_imp("w0_ethni",  match_data_stacked, binary = T, strokevar = "n_strokes")
+mat.edu <- describeBy_imp("w0_educ",   match_data_stacked, binary = T, strokevar = "n_strokes")
+mat.smo <- describeBy_imp("w1_heska",  match_data_stacked, binary = T, strokevar = "n_strokes")
+mat.bmi <- describeBy_imp("w0_bmival", match_data_stacked, binary = F, strokevar = "n_strokes")
+mat.hyp <- describeBy_imp("w1_hypt",   match_data_stacked, binary = T, strokevar = "n_strokes")
+mat.dia <- describeBy_imp("w1_diab",   match_data_stacked, binary = T, strokevar = "n_strokes")
+mat.liv <- describeBy_imp("w1_scptr",  match_data_stacked, binary = T, strokevar = "n_strokes")
+
+### Show all descriptive stats in list
+list("age"        = i.age, 
+     "gender"     = i.gen, 
+     "ethnicity"  = i.eth, 
+     "education"  = i.edu, 
+     "smoking"    = i.smo, 
+     "bmi"        = i.bmi, 
+     "hypert"     = i.hyp, 
+     "diabetes"   = i.dia, 
+     "cohab_marr" = i.liv)
 
-eff <- as.data.frame(fixef(fit_dep))
-ses <- as.data.frame(se.fixef(fit_dep))
 
-effs_depress <- cbind(eff, ses)
-names(effs_depress) <- c("eff", "se")
-effs_depress <- rownames_to_column(effs_depress, var = "var")
-
-effs_depress$time <- recode(effs_depress$var, "'(Intercept)' = 0; 
-                            'dummy_mins4' = -4; 
-                            'dummy_mins3' = -3; 
-                            'dummy_mins2' = -2; 
-                            'dummy_mins1' = -1; 
-                            'dummy_plus1' =  1; 
-                            'dummy_plus2' =  2; 
-                            'dummy_plus3' =  3; 
-                            'dummy_plus4' =  4; 
-                            'dummy_plus5' =  5")
-
-effs_depress$value    <- effs_depress$eff[1] + effs_depress$eff
-effs_depress$value[1] <- effs_depress$eff[1]
-
-# Make the graph with the 95% confidence interval
-ggplot(effs_depress, aes(x = time, y = value, group = 1)) +
-  geom_vline(xintercept = -0.5, linetype = "dashed") +
-  geom_errorbar(width = .1, aes(ymin = value - se, ymax = value + se), colour = "#C46391") +
-  geom_point(shape = 21, size = 3, fill = "#C46391", colour = "#C46391") + 
-  geom_line(colour = "#C46391", size = 1) +
-  ylim(0.95, 2.5) + 
-  scale_x_continuous(breaks = c(-4,-3,-2,-1,0,1,2,3,4,5)) +
-  labs(y = "Depressive Symptoms", x = "") +
-  theme_classic(base_size = 15)+
-  theme(axis.title.x = element_blank(), 
-        axis.title.y = element_text(colour = "black", size = 19, 
-                                    margin = margin(t = 0, r = 15, b = 0, l = 0)),         
-        axis.text.x  = element_text(colour = "black", size = 19, 
-                                    margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.text.y  = element_text(colour = "black", size = 19), 
-        legend.position = "none") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank())
-
-
-# -------------------
-# Actual data plots
-# -------------------
-
-# Depressive symptoms
-# --------------------
-
-sum_dep <- summarySEwithin(data_long, 
-                           measurevar = "depress", withinvars = "time",
-                           idvar = "idauniq", na.rm = T, conf.interval = .95)
-
-# Make the graph with the 95% confidence interval
-ggplot(sum_dep, aes(x = time, y = depress, group = 1)) +
-  geom_errorbar(width = .1, aes(ymin = depress - ci, ymax = depress + ci)) +
-  geom_point(shape = 21, size = 3, fill = "white") + 
-  geom_line() +
-  ylim(1, 3) + 
-  labs(y = "Depressive Symptoms", x = "")
-
-
-# Life satisfaction
-# -------------------
-
-sum_swl <- summarySEwithin(data_long, 
-                           measurevar = "lifesat", withinvars = "time",
-                           idvar = "idauniq", na.rm = T, conf.interval = .95)
-
-# Make the graph with the 95% confidence interval
-ggplot(sum_swl, aes(x = time, y = lifesat, group = 1)) +
-  geom_errorbar(width = .1, aes(ymin = lifesat - ci, ymax = lifesat + ci)) +
-  geom_point(shape = 21, size = 3, fill = "white") + 
-  geom_line() +
-  #ylim(1, 3) + 
-  labs(y = "Life satisfaction", x = "")
-
-
-# Loneliness
-# ------------
-
-sum_lon <- summarySEwithin(data_long, 
-                           measurevar = "loneli", withinvars = "time",
-                           idvar = "idauniq", na.rm = T, conf.interval = .95)
-
-# Make the graph with the 95% confidence interval
-ggplot(sum_lon, aes(x = time, y = loneli, group = 1)) +
-  geom_errorbar(width = .1, aes(ymin = loneli- ci, ymax = loneli + ci)) +
-  geom_point(shape = 21, size = 3, fill = "white") + 
-  geom_line() +
-  #ylim(1, 3) + 
-  labs(y = "Loneliness", x = "")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#################################
-### Personen mit Schlaganfall ###
-#################################
-
-
-table(data$w3_hediast)
-data_st <- subset(data, w3_hediast == 1)
-
-#### 1. Depressive Symptome ######
-
-# select relevant variables
-data_st_dep <- data_st[, c("idauniq", 
-                           "w2_dep_sum", "w3_dep_sum", "w4_dep_sum", "w5_dep_sum",
-                           "w6_dep_sum", "w7_dep_sum")]
-
-# creat long formats 
-data_st_dep_long <- melt(data_st_dep, id.vars=c("idauniq"))
-
-sum_st_dep <- summarySEwithin(data_st_dep_long, 
-                              measurevar="value", withinvars="variable",
-                              idvar="idauniq", na.rm=T, conf.interval=.95)
-
-# Make the graph with the 95% confidence interval
-ggplot(sum_st_dep, aes(x=variable, y=value)) +
-  geom_line() +
-  geom_errorbar(width=.1, aes(ymin=value-ci, ymax=value+ci)) +
-  geom_point(shape=21, size=3, fill="white") + 
-  ylim(1,3) + 
-  labs(y = "Depressive Symptoms", x = "", title = "New Stroke at W3")
-
-#### 2. Lebenszufriedenheit #####
-
-data_st_swl <- data_st[, c("idauniq", "w2_swl_mean", "w3_swl_mean", "w4_swl_mean", "w5_swl_mean",
-                           "w6_swl_mean", "w7_swl_mean")]
-
-data_st_swl_long <- melt(data_st_swl, id.vars=c("idauniq"))
-
-sum_st_swl <- summarySEwithin(data_st_swl_long, 
-                              measurevar="value", withinvars="variable",
-                              idvar="idauniq", na.rm=T, conf.interval=.95)
-
-# Make the graph with the 95% confidence interval
-ggplot(sum_st_swl, aes(x = variable, y = value)) +
-  #geom_vline(xintercept = which(sum_st_swl$variable == 'w3_swl_mean'), color = "red", size = 1.5) +
-  geom_line() +
-  geom_errorbar(width=.1, aes(ymin=value-ci, ymax=value+ci)) +
-  geom_point(shape=21, size=3, fill="white") + 
-  ylim(4,6) + 
-  labs(y = "Life Satisfaction", x = "", title = "New Stroke at W3")
 
