@@ -54,7 +54,7 @@ wave_1_c  <- wave_1_c[,c("idauniq", "elsa", "dhsex", "dhager", "fqethnr", "indoc
                          "headb11", "headb12", "headb13",
                          # memory 
                          "cflisen", "cflisd",
-                         # despressive symptoms
+                         # depressive symptoms
                          "psceda", "pscedb", "pscedc", "pscedd", "pscede", "pscedf", 
                          "pscedg", "pscedh"
                          )]
@@ -139,7 +139,7 @@ wave_6_c  <- wave_6_c[,c("idauniq", "indager", "w6indout",
 
 wave_7_c  <- wave_7_c[,c("idauniq", "indager", 
                          # stroke newly diagnosed
-                         "hediast", "hedimst", 
+                         "hediast", "hedimst", "HeAge", "HeAgeR", "HeAgeRY",
                          # mobility variables
                          "hemobwa", "hemobsi", "hemobch", "hemobcs", "hemobcl", 
                          "hemobst", "hemobre", "hemobpu", "hemobli", "hemobpi", 
@@ -258,7 +258,7 @@ data <- subset(data, data$w1_hedia == 0) # Keep only non-stroke at wave 1
 
 
 # ------------------------------------------------------------
-# Select participants with first and no stroke during study
+# Select stroke cases and participants without stroke
 # ------------------------------------------------------------
 
 # Create stroke variable for wave 2 (newly diagn.)
@@ -290,7 +290,7 @@ table(data$n_strokes, useNA = "always")
 data_full <- data
 
 # Select only people with 1 stroke during study
-data <- subset(data_full, n_strokes == 1) # 411 
+data <- subset(data_full, n_strokes == 1) 
 
 # Check peoples dates for their stroke in each wave
 table(data$w2_HeAgeRY, useNA = "always") 
@@ -298,6 +298,7 @@ table(data$w3_heagery, useNA = "always")
 table(data$w4_heagery, useNA = "always")
 table(data$w5_heagery, useNA = "always")
 table(data$w6_HeAgeRY, useNA = "always")
+table(data$w7_HeAgeRY, useNA = "always")
 
 # Only include people with reasonable dates for their stroke
 data <- subset(data, data$w2_HeAgeRY > 2001 | is.na(data$w2_HeAgeRY))  
@@ -305,6 +306,7 @@ data <- subset(data, data$w3_heagery > 2003 | is.na(data$w3_heagery))
 data <- subset(data, data$w4_heagery > 2005 | is.na(data$w4_heagery))  
 data <- subset(data, data$w5_heagery > 2007 | is.na(data$w5_heagery))  
 data <- subset(data, data$w6_HeAgeRY > 2009 | is.na(data$w6_HeAgeRY)) 
+data <- subset(data, data$w7_HeAgeRY > 2011 | is.na(data$w7_HeAgeRY)) 
 
 # At which wave did stroke occur? 
 table(data$w2_hediast, useNA = "always")
@@ -312,8 +314,19 @@ table(data$w3_hediast, useNA = "always")
 table(data$w4_hediast, useNA = "always")
 table(data$w5_hediast, useNA = "always")
 table(data$w6_hediast, useNA = "always")
+table(data$w7_hediast, useNA = "always")
 
 # Create new time variables indicating the time of stroke, before and after
+(data <- data %>%
+    mutate(w1_time = case_when( # new var w2_time coding second wave in relation to stroke
+      w2_hediast == 1 ~ -1,    # if stroke in wave 2, w2_time = -1
+      w3_hediast == 1 ~ -2,    # if stroke in wave 3, w2_time = -2
+      w4_hediast == 1 ~ -3,    # if stroke in wave 4, w2_time = -3
+      w5_hediast == 1 ~ -4,    # if stroke in wave 5, w2_time = -4
+      w6_hediast == 1 ~ -5,    # if stroke in wave 6, w2_time = -5
+      w7_hediast == 1 ~ -6     # if stroke in wave 7, w2_time = -6
+    )))
+
 (data <- data %>%
     mutate(w2_time = case_when( # new var w2_time coding second wave in relation to stroke
       w2_hediast == 1 ~  0,    # if stroke in wave 2, w2_time =  0
@@ -436,6 +449,7 @@ for (i in names(data[,c(grep("psced", colnames(data)))])) {
   data[[i]][data[[i]] == 2] <- 0}
 
 # Reverse item d 
+data$w1_pscedd_r <- 1 - data$w1_pscedd
 data$w2_pscedd_r <- 1 - data$w2_pscedd
 data$w3_pscedd_r <- 1 - data$w3_pscedd
 data$w4_pscedd_r <- 1 - data$w4_pscedd
@@ -444,6 +458,7 @@ data$w6_pscedd_r <- 1 - data$w6_pscedd
 data$w7_pscedd_r <- 1 - data$w7_pscedd
 
 # Reverse item f 
+data$w1_pscedf_r <- 1 - data$w1_pscedf
 data$w2_pscedf_r <- 1 - data$w2_pscedf
 data$w3_pscedf_r <- 1 - data$w3_pscedf
 data$w4_pscedf_r <- 1 - data$w4_pscedf
@@ -452,6 +467,8 @@ data$w6_pscedf_r <- 1 - data$w6_pscedf
 data$w7_pscedf_r <- 1 - data$w7_pscedf
 
 # Select all CES-D items for each wave 
+w1_dep_items <- data[,c("w1_psceda", "w1_pscedb"  , "w1_pscedc", "w1_pscedd_r", 
+                        "w1_pscede", "w1_pscedf_r", "w1_pscedg", "w1_pscedh")] # wave 1
 w2_dep_items <- data[,c("w2_psceda", "w2_pscedb"  , "w2_pscedc", "w2_pscedd_r", 
                         "w2_pscede", "w2_pscedf_r", "w2_pscedg", "w2_pscedh")] # wave 2
 w3_dep_items <- data[,c("w3_psceda", "w3_pscedb"  , "w3_pscedc", "w3_pscedd_r", 
@@ -466,6 +483,7 @@ w7_dep_items <- data[,c("w7_psceda", "w7_pscedb"  , "w7_pscedc", "w7_pscedd_r",
                         "w7_pscede", "w7_pscedf_r", "w7_pscedg", "w7_pscedh")] # wave 7
 
 # Calculate sum score of depressive symptoms (people with missing values are excluded)
+data$w1_dep_sum <- rowSums(w1_dep_items)
 data$w2_dep_sum <- rowSums(w2_dep_items)
 data$w3_dep_sum <- rowSums(w3_dep_items)
 data$w4_dep_sum <- rowSums(w4_dep_items)
@@ -476,8 +494,8 @@ data$w7_dep_sum <- rowSums(w7_dep_items)
 # Mobility limitations
 # -----------------------
 
-# Get disability data from wave 2 (13 items) and recode items
-for (i in names(data[,c(grep("headb", colnames(data)))])) {
+# Get mobility data from wavea 1 and 2 (10 items) and recode 
+for (i in names(data[,c(grep("heada", colnames(data)))])) {
   data[[i]] <- data[[i]] %>% dplyr::recode(., 
                                            '96' = 0,
                                            '1'  = 1,
@@ -489,48 +507,110 @@ for (i in names(data[,c(grep("headb", colnames(data)))])) {
                                            '7'  = 1,
                                            '8'  = 1,
                                            '9'  = 1,
-                                           '10' = 1,
-                                           '11' = 1,
-                                           '12' = 1,
-                                           '13' = 1)
+                                           '10' = 1)
 }
 
-# Select all ADL items for each wave
-w2_adl_items <- data[,c( "w2_headb01", "w2_headb02", "w2_headb03", "w2_headb04", "w2_headb05", 
-                         "w2_headb06", "w2_headb07", "w2_headb08", "w2_headb09", "w2_headb10",
-                         "w2_headb11", "w2_headb12", "w2_headb13")] # wave 2
+# Select all mobility items for each wave
+w1_mob_items <- # wave 1
+  data[,c( "w1_heada01", "w1_heada02", "w1_heada03", "w1_heada04", "w1_heada05", 
+           "w1_heada06", "w1_heada07", "w1_heada08", "w1_heada09", "w1_heada10")] 
 
-w3_adl_items <- data[,c( "w3_headldr", "w3_headlwa", "w3_headlba", "w3_headlea", "w3_headlbe", 
-                         "w3_headlwc", "w3_headlma", "w3_headlpr", "w3_headlsh", "w3_headlph", 
-                         "w3_headlme", "w3_headlho", "w3_headlmo")] # wave 3
+w2_mob_items <- # wave 2
+  data[,c( "w2_heada01", "w2_heada02", "w2_heada03", "w2_heada04", "w2_heada05", 
+           "w2_heada06", "w2_heada07", "w2_heada08", "w2_heada09", "w2_heada10")] 
 
-w4_adl_items <- data[,c( "w4_headldr", "w4_headlwa", "w4_headlba", "w4_headlea", "w4_headlbe", 
-                         "w4_headlwc", "w4_headlma", "w4_headlpr", "w4_headlsh", "w4_headlph", 
-                         "w4_headlme", "w4_headlho", "w4_headlmo")] # wave 4
+w3_mob_items <- # wave 3
+  data[,c( "w3_hemobwa", "w3_hemobsi", "w3_hemobch", "w3_hemobcs", "w3_hemobcl", 
+           "w3_hemobst", "w3_hemobre", "w3_hemobpu", "w3_hemobli", "w3_hemobpi")] 
 
-w5_adl_items <- data[,c( "w5_headldr", "w5_headlwa", "w5_headlba", "w5_headlea", "w5_headlbe", 
-                         "w5_headlwc", "w5_headlma", "w5_headlpr", "w5_headlsh", "w5_headlph", 
-                         "w5_headlme", "w5_headlho", "w5_headlmo")] # wave 5
+w4_mob_items <- # wave 4
+  data[,c( "w4_hemobwa", "w4_hemobsi", "w4_hemobch", "w4_hemobcs", "w4_hemobcl", 
+           "w4_hemobst", "w4_hemobre", "w4_hemobpu", "w4_hemobli", "w4_hemobpi")] 
 
-w6_adl_items <- data[,c( "w6_headldr", "w6_headlwa", "w6_headlba", "w6_headlea", "w6_headlbe", 
-                         "w6_headlwc", "w6_headlma", "w6_headlpr", "w6_headlsh", "w6_headlph", 
-                         "w6_headlme", "w6_headlho", "w6_headlmo")] # wave 6
+w5_mob_items <-  # wave 5
+  data[,c( "w5_hemobwa", "w5_hemobsi", "w5_hemobch", "w5_hemobcs", "w5_hemobcl", 
+           "w5_hemobst", "w5_hemobre", "w5_hemobpu", "w5_hemobli", "w5_hemobpi")] 
 
-w7_adl_items <- data[,c( "w7_headldr", "w7_headlwa", "w7_headlba", "w7_headlea", "w7_headlbe", 
-                         "w7_headlwc", "w7_headlma", "w7_headlpr", "w7_headlsh", "w7_headlph", 
-                         "w7_headlme", "w7_headlho", "w7_headlmo")] # wave 7
+w6_mob_items <- # wave 6
+  data[,c( "w6_hemobwa", "w6_hemobsi", "w6_hemobch", "w6_hemobcs", "w6_hemobcl", 
+           "w6_hemobst", "w6_hemobre", "w6_hemobpu", "w6_hemobli", "w6_hemobpi")] 
+
+w7_mob_items <- # wave 7
+  data[,c( "w7_hemobwa", "w7_hemobsi", "w7_hemobch", "w7_hemobcs", "w7_hemobcl", 
+           "w7_hemobst", "w7_hemobre", "w7_hemobpu", "w7_hemobli", "w7_hemobpi")] 
 
 # Calculate sum scores for each wave
-data$w2_adl_mean <- rowSums(w2_adl_items, na.rm = T)
-data$w3_adl_mean <- rowSums(w3_adl_items)
-data$w4_adl_mean <- rowSums(w4_adl_items)
-data$w5_adl_mean <- rowSums(w5_adl_items)
-data$w6_adl_mean <- rowSums(w6_adl_items)
-data$w7_adl_mean <- rowSums(w7_adl_items)
+data$w1_mob_sum <- rowSums(w1_mob_items, na.rm = T)
+data$w2_mob_sum <- rowSums(w2_mob_items, na.rm = T)
+data$w3_mob_sum <- rowSums(w3_mob_items)
+data$w4_mob_sum <- rowSums(w4_mob_items)
+data$w5_mob_sum <- rowSums(w5_mob_items)
+data$w6_mob_sum <- rowSums(w6_mob_items)
+data$w7_mob_sum <- rowSums(w7_mob_items)
 
 
 # Activities of daily living
 # -----------------------------
+
+# Get adl data from wave 1 and 2 (10 items) and recode 
+for (i in names(data[,c(grep("headb", colnames(data)))])) {
+  data[[i]] <- data[[i]] %>% dplyr::recode(., 
+                                           '96' = 0,
+                                           '7'  = 0,
+                                           '8'  = 0,
+                                           '9'  = 0,
+                                           '10' = 0,
+                                           '11' = 0,
+                                           '12' = 0,
+                                           '13' = 0,
+                                           '1'  = 1,
+                                           '2'  = 1,
+                                           '3'  = 1,
+                                           '4'  = 1,
+                                           '5'  = 1,
+                                           '6'  = 1)
+}
+
+# Select all mobility items for each wave
+w1_adl_items <- # wave 1
+  data[,c( "w1_headb01", "w1_headb02", "w1_headb03", "w1_headb04", "w1_headb05", 
+           "w1_headb06", "w1_headb07", "w1_headb08", "w1_headb09", "w1_headb10", 
+           "w1_headb11", "w1_headb12", "w1_headb13")] 
+
+w2_adl_items <- # wave 2
+  data[,c( "w2_headb01", "w2_headb02", "w2_headb03", "w2_headb04", "w2_headb05", 
+           "w2_headb06", "w2_headb07", "w2_headb08", "w2_headb09", "w2_headb10", 
+           "w2_headb11", "w2_headb12", "w2_headb13")] 
+
+w3_adl_items <- # wave 3
+  data[,c( "w3_headldr", "w3_headlwa", "w3_headlba", "w3_headlea", "w3_headlbe", 
+           "w3_headlwc")] 
+
+w4_adl_items <- # wave 4
+  data[,c( "w4_headldr", "w4_headlwa", "w4_headlba", "w4_headlea", "w4_headlbe", 
+           "w4_headlwc")] 
+
+w5_adl_items <-  # wave 5
+  data[,c( "w5_headldr", "w5_headlwa", "w5_headlba", "w5_headlea", "w5_headlbe", 
+           "w5_headlwc")] 
+
+w6_adl_items <- # wave 6
+  data[,c( "w6_headldr", "w6_headlwa", "w6_headlba", "w6_headlea", "w6_headlbe", 
+           "w6_headlwc")] 
+
+w7_adl_items <- # wave 7
+  data[,c( "w7_headldr", "w7_headlwa", "w7_headlba", "w7_headlea", "w7_headlbe", 
+           "w7_headlwc")] 
+
+
+# Calculate sum scores for each wave
+data$w1_adl_sum <- rowSums(w1_adl_items, na.rm = T)
+data$w2_adl_sum <- rowSums(w2_adl_items, na.rm = T)
+data$w3_adl_sum <- rowSums(w3_adl_items)
+data$w4_adl_sum <- rowSums(w4_adl_items)
+data$w5_adl_sum <- rowSums(w5_adl_items)
+data$w6_adl_sum <- rowSums(w6_adl_items)
+data$w7_adl_sum <- rowSums(w7_adl_items)
 
 
 # Memory score
@@ -553,37 +633,45 @@ data$w1_diab  <- as.factor(data$w1_diab)
 
 # Reduce dataframe to relevant variables
 data_red <- 
-  data[,c("idauniq"    , "w1_dhsex"   , "w0_ethni"   , "w0_educ"    , "w1_dhager"  , "n_strokes"  ,
-          "w1_hypt"    , "w1_heska"   , "w1_diab"    , "w1_scptr"   , "w0_bmival" ,
-          "w2_time"    , "w3_time"    , "w4_time"    , "w5_time"    , "w6_time"    , "w7_time"    ,
-          "w2_hediast" , "w3_hediast" , "w4_hediast" , "w5_hediast" , "w6_hediast" , "w7_hediast" , 
-          "w2_dep_sum" , "w3_dep_sum" , "w4_dep_sum" , "w5_dep_sum" , "w6_dep_sum" , "w7_dep_sum" ,
-          "w2_swl_mean", "w3_swl_mean", "w4_swl_mean", "w5_swl_mean", "w6_swl_mean", "w7_swl_mean",
-          "w2_lon_mean", "w3_lon_mean", "w4_lon_mean", "w5_lon_mean", "w6_lon_mean", "w7_lon_mean", 
-          "w2_adl_mean", "w3_adl_mean", "w4_adl_mean", "w5_adl_mean", "w6_adl_mean", "w7_adl_mean", 
-          "w2_psceda"  , "w2_pscedb", "w2_pscedd", "w2_pscede", "w2_pscedf", "w2_pscedg", "w2_pscedh", 
-          "w3_psceda"  , "w3_pscedb", "w3_pscedd", "w3_pscede", "w3_pscedf", "w3_pscedg", "w3_pscedh",
-          "w4_psceda"  , "w4_pscedb", "w4_pscedd", "w4_pscede", "w4_pscedf", "w4_pscedg", "w4_pscedh",
-          "w5_psceda"  , "w5_pscedb", "w5_pscedd", "w5_pscede", "w5_pscedf", "w5_pscedg", "w5_pscedh", 
-          "w6_psceda"  , "w6_pscedb", "w6_pscedd", "w6_pscede", "w6_pscedf", "w6_pscedg", "w6_pscedh",
-          "w7_psceda"  , "w7_pscedb", "w7_pscedd", "w7_pscede", "w7_pscedf", "w7_pscedg", "w7_pscedh")]
+  data[,c("idauniq"    , "w1_dhsex"   , "w0_ethni"   , "w0_educ"    , "w1_dhager"  , 
+          "n_strokes"  , "w1_hypt"    , "w1_heska"   , "w1_diab"    , "w1_scptr"   ,
+          "w1_time"    , "w2_time"    , "w3_time"    , "w4_time"    , "w5_time"    , 
+          "w6_time"    , "w7_time"    , "w1_hedia"   , "w2_hediast" , "w3_hediast" , 
+          "w4_hediast" , "w5_hediast" , "w6_hediast" , "w7_hediast" , "w1_dep_sum" ,
+          "w2_dep_sum" , "w3_dep_sum" , "w4_dep_sum" , "w5_dep_sum" , "w6_dep_sum" , 
+          "w7_dep_sum" , "w1_mob_sum" , "w2_mob_sum" , "w3_mob_sum" , "w4_mob_sum" , 
+          "w5_mob_sum" , "w6_mob_sum" , "w7_mob_sum" , "w1_adl_sum" , "w2_adl_sum" , 
+          "w3_adl_sum" , "w4_adl_sum" , "w5_adl_sum" , "w6_adl_sum" , "w7_adl_sum" , 
+          "w1_psceda"  , "w1_pscedb"  , "w1_pscedc"  , "w1_pscedd"  , "w1_pscede"  , 
+          "w1_pscedf"  , "w1_pscedg"  , "w1_pscedh"  , "w2_psceda"  , "w2_pscedb"  , 
+          "w2_pscedc"  , "w2_pscedd"  , "w2_pscede"  , "w2_pscedf"  , "w2_pscedg"  , 
+          "w2_pscedh"  , "w3_psceda"  , "w3_pscedb"  , "w3_pscedc"  , "w3_pscedd"  , 
+          "w3_pscede"  , "w3_pscedf"  , "w3_pscedg"  , "w3_pscedh"  , "w4_psceda"  , 
+          "w4_pscedb"  , "w4_pscedc"  , "w4_pscedd"  , "w4_pscede"  , "w4_pscedf"  , 
+          "w4_pscedg"  , "w4_pscedh"  , "w5_psceda"  , "w5_pscedb"  , "w5_pscedc"  , 
+          "w5_pscedd"  , "w5_pscede"  , "w5_pscedf"  , "w5_pscedg"  , "w5_pscedh"  , 
+          "w6_psceda"  , "w6_pscedb"  , "w6_pscedc"  , "w6_pscedd"  , "w6_pscede"  , 
+          "w6_pscedf"  , "w6_pscedg"  , "w6_pscedh"  , "w7_psceda"  , "w7_pscedb"  , 
+          "w7_pscedc"  , "w7_pscedd"  , "w7_pscede"  , "w7_pscedf"  , "w7_pscedg"  , 
+          "w7_pscedh")]
 
  # shape to long format --> might be pointless in the future 
-data_long <- reshape(data_red, direction = "long",
-                     idvar = "idauniq",
-                     varying = list(c("w2_hediast", "w3_hediast", "w4_hediast", "w5_hediast", 
-                                      "w6_hediast", "w7_hediast"),
-                                    grep("time",     colnames(data), value = T), 
-                                    grep("dep_sum",  colnames(data), value = T), 
-                                    grep("swl_mean", colnames(data), value = T), 
-                                    grep("lon_mean", colnames(data), value = T), 
-                                    grep("adl_mean", colnames(data), value = T)), 
-                     timevar = "wave", 
-                     times = c("w2", "w3", "w4", "w5", "w6", "w7"), 
-                     v.names = c("stroke", "time", "depress", "lifesat", "loneli", "adl"))
+# data_long <- reshape(data_red, direction = "long",
+#                      idvar = "idauniq",
+#                      varying = list(c("w1_hedia"  , "w2_hediast", "w3_hediast", 
+#                                       "w4_hediast", "w5_hediast", "w6_hediast", 
+#                                       "w7_hediast"),
+#                                     grep("time",    colnames(data), value = T), 
+#                                     grep("dep_sum", colnames(data), value = T), 
+#                                     grep("mob_sum", colnames(data), value = T), 
+#                                     grep("adl_sum", colnames(data), value = T)), 
+#                      timevar = "wave", 
+#                      times = c("w1", "w2", "w3", "w4", "w5", "w6", "w7"), 
+#                      v.names = c("stroke", "time", "depress", "mobil", "adl"))
 
 # 
-data_long_stroke <- subset(data_long, n_stroke == 1)
+# data_long_stroke <- subset(data_long, n_stroke == 1)
+
 
 # ---------------------------
 # Save preprocessed data
