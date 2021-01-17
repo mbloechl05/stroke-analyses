@@ -1,6 +1,6 @@
-## =====================
-##  Data preprocessing 
-## =====================
+# =====================
+#  Data preprocessing 
+# =====================
 
 # clean work space
 rm(list = ls()) 
@@ -26,7 +26,7 @@ wave_0_c <- rbind.fill(wave01, wave02, wave03)
 rm(list = c("wave01", "wave02", "wave03")) 
 
 # Load data from all other waves (starting from wave 2)
-wave_1_c <- read.table("data/raw/tab/wave_1_core_data_v3.tab", sep = "\t", header = T) # wave 1
+wave_1_c <- read.table("data/raw/tab/wave_1_core_data_v3.tab", sep = "\t", header = T) 
 wave_2_c <- read.table("data/raw/tab/wave_2_core_data_v4.tab", sep = "\t", header = T)
 wave_3_c <- read.table("data/raw/tab/wave_3_elsa_data_v4.tab", sep = "\t", header = T, fill = T) 
 wave_4_c <- read.table("data/raw/tab/wave_4_elsa_data_v3.tab", sep = "\t", header = T)
@@ -66,6 +66,12 @@ wave_2_c  <-
               "hedia01", "hedia02", "hedia03", "hedia04", "hedia05" , "hedia06", 
               "hedia07", "hedia08", "hedia09", "w2indout", "HeAge"  , "HeAgeR" , 
               "HeAgeRY", "Henmst" ,
+              # adl variables
+              "headb01", "headb02", "headb03", "headb04", "headb05", "headb06", 
+              "headb07", "headb08", "headb09", "headb10", "headb11", "headb12", 
+              "headb13",
+              # memory
+              "CfLisEn", "CfLisD",
               # depressive symptoms
               "PScedA", "PScedB", "PScedC", "PScedD", "PScedE", "PScedF", 
               "PScedG", "PScedH")]
@@ -75,6 +81,10 @@ wave_3_c  <-
   wave_3_c[,c("idauniq", "w3indout", "indager",
               # stroke newly diagnosed
               "hediast", "dhedimst", "heage", "heager", "heagery", "henmst",
+              # adl variables
+              "headldr", "headlwa", "headlba", "headlea", "headlbe", "headlwc", 
+              # memory 
+              "cflisen", "cflisd",
               # depressive symptoms
               "psceda", "pscedb", "pscedc", "pscedd", "pscede", "pscedf", 
               "pscedg", "pscedh")]
@@ -84,6 +94,10 @@ wave_4_c  <-
   wave_4_c[,c("idauniq", "indager", "outindw4",
               # stroke newly diagnosed
               "hediast", "hedimst", "heage", "heager", "heagery", "henmst" ,
+              # adl variables
+              "headldr", "headlwa", "headlba", "headlea", "headlbe", "headlwc", 
+              # memory 
+              "cflisen", "cflisd",
               # depressive symptoms
               "psceda", "pscedb", "pscedc", "pscedd", "pscede", "pscedf", 
               "pscedg", "pscedh")]
@@ -93,6 +107,10 @@ wave_5_c  <-
   wave_5_c[,c("idauniq", "indager", "w5indout", 
               # stroke newly diagnosed
               "hediast", "hedimst", "heage", "heager", "heagery", "henmst",
+              # adl variables
+              "headldr", "headlwa", "headlba", "headlea", "headlbe", "headlwc", 
+              # memory 
+              "cflisen", "cflisd",
               # depressive symptoms
               "psceda", "pscedb", "pscedc", "pscedd" , "pscede" , "pscedf", 
               "pscedg", "pscedh")]
@@ -102,6 +120,10 @@ wave_6_c  <-
   wave_6_c[,c("idauniq", "indager", "w6indout",
               # stroke newly diagnosed
               "hediast", "hedimst", "HeAge", "HeAgeR", "HeAgeRY", "HeNmSt",
+              # adl variables
+              "headldr", "headlwa", "headlba", "headlea", "headlbe", "headlwc", 
+              # memory 
+              "CfLisEn", "CfLisD",
               # depressive symptoms
               "PScedA", "PScedB", "PScedC", "PScedD" , "PScedE" , "PScedF", 
               "PScedG", "PScedH")]
@@ -111,6 +133,10 @@ wave_7_c  <-
   wave_7_c[,c("idauniq", "indager", 
               # stroke newly diagnosed
               "hediast", "hedimst", "HeAge", "HeAgeR", "HeAgeRY",
+              # adl variables
+              "headldr", "headlwa", "headlba", "headlea", "headlbe", "headlwc", 
+              # memory 
+              "CfLisEn", "CfLisD",
               # depressive symptoms
               "PScedA", "PScedB", "PScedC", "PScedD" , "PScedE" , "PScedF", 
               "PScedG", "PScedH")]
@@ -145,6 +171,25 @@ setnames(wave_7_c,
          # new harmonised variable names
          new = c("psceda", "pscedb", "pscedc", "pscedd", "pscede", "pscedf", 
                  "pscedg", "pscedh"))
+
+
+# Harmonise naming of cognition variables across waves 
+# -------------------------------------------------------
+
+# rename adl variables wave 2
+setnames(wave_2_c, 
+         old = c("CfLisEn", "CfLisD"), 
+         new = c("cflisen", "cflisd"))
+
+# rename adl variables wave 6
+setnames(wave_6_c, 
+         old = c("CfLisEn", "CfLisD"), 
+         new = c("cflisen", "cflisd"))
+
+# rename adl variables wave 7
+setnames(wave_7_c, 
+         old = c("CfLisEn", "CfLisD"), 
+         new = c("cflisen", "cflisd"))
 
 
 # Final steps to create 1 data set
@@ -303,7 +348,7 @@ table(data$w7_hediast, useNA = "always")
 
 # Create new time variables indicating the time of stroke, before and after
 (data <- data %>%
-    mutate(w1_time = case_when( # new var w2_time coding second wave in relation to stroke
+    mutate(w1_time = case_when( # new var w1_time coding first wave in relation to stroke
       w2_hediast == 1 ~ -1,    # if stroke in wave 2, w2_time = -1
       w3_hediast == 1 ~ -2,    # if stroke in wave 3, w2_time = -2
       w4_hediast == 1 ~ -3,    # if stroke in wave 4, w2_time = -3
@@ -400,6 +445,11 @@ for (i in names(data[,c(grep("w1_dhsex", colnames(data)), # 0 = female
                         grep("w1_heska", colnames(data)))])) {
   data[[i]][data[[i]]==2] <- 0}
  
+# !!!!! some data in sex are missing initially 
+# table(data$w1_dhsex, useNA = "always")
+# 
+# 1    2 <NA> 
+#   5335 6764  108 
 
 # Ethnicity
 # ------------
@@ -431,6 +481,9 @@ data$w1_hypt[data$w1_hedia02 == 1 |
                data$w1_hedia08 == 1 | 
                data$w1_hedia09 == 1] <- 1
 
+# Have to recode those with NA to NA again 
+data$w1_hypt[is.na(data$w1_hedia01)] <- NA
+
 
 # Diabetes
 # --------------
@@ -445,6 +498,9 @@ data$w1_diab[data$w1_hedia02 == 7 |
                data$w1_hedia07 == 7 |
                data$w1_hedia08 == 7 | 
                data$w1_hedia09 == 7] <- 1
+
+# Have to recode those with NA to NA again 
+data$w1_diab[is.na(data$w1_hedia01)] <- NA
 
 
 # Depressive symptoms (CESD, 8 items)
@@ -515,7 +571,7 @@ data$w7_dep_sum <- rowSums(w7_dep_items)
 # Activities of daily living
 # -----------------------------
 
-# Get adl data from wave 1 (10 items) and recode 
+# Get adl data from wave 1 and 2 (10 items) and recode 
 for (i in names(data[,c(grep("headb", colnames(data)))])) {
   data[[i]] <- data[[i]] %>% dplyr::recode(., 
                                            '96' = 0,
@@ -535,16 +591,55 @@ for (i in names(data[,c(grep("headb", colnames(data)))])) {
 } # note that in this wave, only answers 1-6 are considered *basic* ADL
 
 # Select all adl items
+# Wave 1
 w1_adl_items <- 
   data[,c( "w1_headb01", "w1_headb02", "w1_headb03", "w1_headb04", "w1_headb05", 
            "w1_headb06", "w1_headb07", "w1_headb08", "w1_headb09", "w1_headb10", 
            "w1_headb11", "w1_headb12", "w1_headb13")] 
 
+# wave 2
+w2_adl_items <- 
+  data[,c( "w2_headb01", "w2_headb02", "w2_headb03", "w2_headb04", "w2_headb05", 
+           "w2_headb06", "w2_headb07", "w2_headb08", "w2_headb09", "w2_headb10", 
+           "w2_headb11", "w2_headb12", "w2_headb13")] 
+
+# wave 3
+w3_adl_items <- 
+  data[,c( "w3_headldr", "w3_headlwa", "w3_headlba", "w3_headlea", "w3_headlbe", 
+           "w3_headlwc")] 
+
+# wave 4
+w4_adl_items <- 
+  data[,c( "w4_headldr", "w4_headlwa", "w4_headlba", "w4_headlea", "w4_headlbe", 
+           "w4_headlwc")] 
+
+# wave 5
+w5_adl_items <-  
+  data[,c( "w5_headldr", "w5_headlwa", "w5_headlba", "w5_headlea", "w5_headlbe", 
+           "w5_headlwc")] 
+
+# wave 6
+w6_adl_items <- 
+  data[,c( "w6_headldr", "w6_headlwa", "w6_headlba", "w6_headlea", "w6_headlbe", 
+           "w6_headlwc")] 
+
+# wave 7
+w7_adl_items <- 
+  data[,c( "w7_headldr", "w7_headlwa", "w7_headlba", "w7_headlea", "w7_headlbe", 
+           "w7_headlwc")]
+
 # Calculate sum scores for each wave
 data$w1_adl_sum <- rowSums(w1_adl_items, na.rm = T)
+data$w2_adl_sum <- rowSums(w2_adl_items, na.rm = T)
+data$w3_adl_sum <- rowSums(w3_adl_items)
+data$w4_adl_sum <- rowSums(w4_adl_items)
+data$w5_adl_sum <- rowSums(w5_adl_items)
+data$w6_adl_sum <- rowSums(w6_adl_items)
+data$w7_adl_sum <- rowSums(w7_adl_items)
 
 # Have to recode those with NA to NA again 
 data$w1_adl_sum[is.na(data$w1_headb01)] <- NA
+data$w2_adl_sum[is.na(data$w2_headb01)] <- NA
 
 
 # Memory score
@@ -552,6 +647,12 @@ data$w1_adl_sum[is.na(data$w1_headb01)] <- NA
 
 # Calculate sum scores for each wave
 data$w1_mem_sum <- rowSums(data[,c( "w1_cflisen", "w1_cflisd")])
+data$w2_mem_sum <- rowSums(data[,c( "w2_cflisen", "w2_cflisd")])
+data$w3_mem_sum <- rowSums(data[,c( "w3_cflisen", "w3_cflisd")])
+data$w4_mem_sum <- rowSums(data[,c( "w4_cflisen", "w4_cflisd")])
+data$w5_mem_sum <- rowSums(data[,c( "w5_cflisen", "w5_cflisd")])
+data$w6_mem_sum <- rowSums(data[,c( "w6_cflisen", "w6_cflisd")])
+data$w7_mem_sum <- rowSums(data[,c( "w7_cflisen", "w7_cflisd")])
 
 
 # ---------------
@@ -574,18 +675,21 @@ data_red <-
           "w6_time"   , "w7_time"   , "w1_hedia"  , "w2_hediast", "w3_hediast", 
           "w4_hediast", "w5_hediast", "w6_hediast", "w7_hediast", "w1_dep_sum", 
           "w2_dep_sum", "w3_dep_sum", "w4_dep_sum", "w5_dep_sum", "w6_dep_sum", 
-          "w7_dep_sum", "w1_adl_sum", "w1_mem_sum", "w1_psceda" , "w1_pscedb" , 
-          "w1_pscedc" , "w1_pscedd" , "w1_pscede" , "w1_pscedf" , "w1_pscedg" , 
-          "w1_pscedh" , "w2_psceda" , "w2_pscedb" , "w2_pscedc" , "w2_pscedd" , 
-          "w2_pscede" , "w2_pscedf" , "w2_pscedg" , "w2_pscedh" , "w3_psceda" , 
-          "w3_pscedb" , "w3_pscedc" , "w3_pscedd" , "w3_pscede" , "w3_pscedf" , 
-          "w3_pscedg" , "w3_pscedh" , "w4_psceda" , "w4_pscedb" , "w4_pscedc" , 
-          "w4_pscedd" , "w4_pscede" , "w4_pscedf" , "w4_pscedg" , "w4_pscedh" , 
-          "w5_psceda" , "w5_pscedb" , "w5_pscedc" , "w5_pscedd" , "w5_pscede" , 
-          "w5_pscedf" , "w5_pscedg" , "w5_pscedh" , "w6_psceda" , "w6_pscedb" , 
-          "w6_pscedc" , "w6_pscedd" , "w6_pscede" , "w6_pscedf" , "w6_pscedg" , 
-          "w6_pscedh" , "w7_psceda" , "w7_pscedb" , "w7_pscedc" , "w7_pscedd" , 
-          "w7_pscede" , "w7_pscedf" , "w7_pscedg" , "w7_pscedh")]
+          "w7_dep_sum", "w1_adl_sum", "w2_adl_sum", "w3_adl_sum", "w4_adl_sum", 
+          "w5_adl_sum", "w6_adl_sum", "w7_adl_sum", "w1_mem_sum", "w2_mem_sum", 
+          "w3_mem_sum", "w4_mem_sum", "w5_mem_sum", "w6_mem_sum", "w7_mem_sum",
+          "w1_psceda" , "w1_pscedb" , "w1_pscedc" , "w1_pscedd" , "w1_pscede" , 
+          "w1_pscedf" , "w1_pscedg" , "w1_pscedh" , "w2_psceda" , "w2_pscedb" , 
+          "w2_pscedc" , "w2_pscedd" , "w2_pscede" , "w2_pscedf" , "w2_pscedg" , 
+          "w2_pscedh" , "w3_psceda" , "w3_pscedb" , "w3_pscedc" , "w3_pscedd" , 
+          "w3_pscede" , "w3_pscedf" , "w3_pscedg" , "w3_pscedh" , "w4_psceda" , 
+          "w4_pscedb" , "w4_pscedc" , "w4_pscedd" , "w4_pscede" , "w4_pscedf" , 
+          "w4_pscedg" , "w4_pscedh" , "w5_psceda" , "w5_pscedb" , "w5_pscedc" , 
+          "w5_pscedd" , "w5_pscede" , "w5_pscedf" , "w5_pscedg" , "w5_pscedh" , 
+          "w6_psceda" , "w6_pscedb" , "w6_pscedc" , "w6_pscedd" , "w6_pscede" , 
+          "w6_pscedf" , "w6_pscedg" , "w6_pscedh" , "w7_psceda" , "w7_pscedb" , 
+          "w7_pscedc" , "w7_pscedd" , "w7_pscede" , "w7_pscedf" , "w7_pscedg" , 
+          "w7_pscedh")]
 
 
 # ---------------------------

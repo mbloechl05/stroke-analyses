@@ -1,6 +1,6 @@
-## ======================
-## Multiple imputation
-## ======================
+# ======================
+# Multiple imputation
+# ======================
 
 # Clean work space
 rm(list = ls())
@@ -31,9 +31,7 @@ data_mi <- data_red %>%
                 w1_hypt, 
                 w1_diab, 
                 w0_bmival, 
-                w1_heska, 
-                w1_adl_sum, 
-                w1_mem_sum)
+                w1_heska)
 
 
 # 1.2) Set up multiple imputation
@@ -58,9 +56,7 @@ predMatrix["w1_dhager",
              "w1_hypt", 
              "w1_diab",
              "w0_bmival", 
-             "w1_heska", 
-             "w1_adl_sum", 
-             "w1_mem_sum")] <- 1
+             "w1_heska")] <- 1
 
 predMatrix["w0_ethni", 
            c("w1_dhager", 
@@ -69,9 +65,7 @@ predMatrix["w0_ethni",
              "w1_hypt", 
              "w1_diab",
              "w0_bmival", 
-             "w1_heska", 
-             "w1_adl_sum", 
-             "w1_mem_sum")] <- 1
+             "w1_heska")] <- 1
 
 predMatrix["w1_dhsex",   
            c("w1_dhager", 
@@ -80,9 +74,7 @@ predMatrix["w1_dhsex",
              "w1_hypt", 
              "w1_diab",
              "w0_bmival", 
-             "w1_heska", 
-             "w1_adl_sum", 
-             "w1_mem_sum")] <- 1
+             "w1_heska")] <- 1
 
 predMatrix["w0_educ",    
            c("w1_dhager", 
@@ -91,9 +83,7 @@ predMatrix["w0_educ",
              "w1_hypt", 
              "w1_diab", 
              "w0_bmival", 
-             "w1_heska", 
-             "w1_adl_sum", 
-             "w1_mem_sum")] <- 1
+             "w1_heska")] <- 1
 
 predMatrix["w1_hypt",   
            c("w1_dhager", 
@@ -102,9 +92,7 @@ predMatrix["w1_hypt",
              "w0_educ", 
              "w1_diab",
              "w0_bmival", 
-             "w1_heska", 
-             "w1_adl_sum", 
-             "w1_mem_sum")] <- 1
+             "w1_heska")] <- 1
 
 predMatrix["w0_bmival",  
            c("w1_dhager", 
@@ -113,9 +101,7 @@ predMatrix["w0_bmival",
              "w0_educ", 
              "w1_diab",
              "w1_hypt", 
-             "w1_heska",  
-             "w1_adl_sum", 
-             "w1_mem_sum")] <- 1
+             "w1_heska")] <- 1
 
 predMatrix["w1_heska",   
            c("w1_dhager", 
@@ -124,9 +110,7 @@ predMatrix["w1_heska",
              "w0_educ", 
              "w1_diab",
              "w1_hypt", 
-             "w0_bmival", 
-             "w1_adl_sum", 
-             "w1_mem_sum")] <- 1
+             "w0_bmival")] <- 1
 
 predMatrix["w1_diab",    
            c("w1_dhager", 
@@ -135,31 +119,7 @@ predMatrix["w1_diab",
              "w0_educ", 
              "w1_hypt", 
              "w0_bmival", 
-             "w1_heska", 
-             "w1_adl_sum", 
-             "w1_mem_sum")] <- 1
-
-predMatrix["w1_adl_sum",   
-           c("w1_dhager", 
-             "w0_ethni", 
-             "w1_dhsex", 
-             "w0_educ", 
-             "w1_hypt", 
-             "w0_bmival", 
-             "w1_heska", 
-             "w1_mem_sum", 
-             "w1_diab")] <- 1
-
-predMatrix["w1_mem_sum",   
-           c("w1_dhager", 
-             "w0_ethni" , 
-             "w1_dhsex", 
-             "w0_educ", 
-             "w1_hypt", 
-             "w0_bmival", 
-             "w1_heska", 
-             "w1_diab", 
-             "w1_adl_sum")] <- 1
+             "w1_heska")] <- 1
 
 ### Imputation methods
 impMethod[c("w0_ethni", 
@@ -170,9 +130,7 @@ impMethod[c("w0_ethni",
             "w1_diab")] <- "logreg" # log. regression
 
 impMethod[c("w1_dhager", 
-            "w0_bmival", 
-            "w1_adl_sum", 
-            "w1_mem_sum")] <- "pmm" 
+            "w0_bmival")] <- "pmm" 
 
 
 # 1.3) Run imputation
@@ -196,7 +154,6 @@ implist <- mitml::mids2mitml.list(imp)
 # 2) Save imputed data 
 # ----------------------
 
-save(imp, 
-     implist, 
-     data_mi, file = "data/processed/imp_data.RData")
+save(imp, implist, data_mi, 
+     file = "data/processed/imp_data.RData")
 

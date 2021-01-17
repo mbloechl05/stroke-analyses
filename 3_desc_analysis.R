@@ -1,8 +1,8 @@
-## =================================
-##  Descriptive data analysis
-## =================================
+# =================================
+#  Descriptive data analysis
+# =================================
 
-# Source helper function describeBy_imp()
+# Source helper functions
 source("analyses/helpers_describe.R")
 
 # Load data 
@@ -28,8 +28,6 @@ smo <- descr_b (data_red$w1_heska)
 bmi <- describe(data_red$w0_bmival)
 hyp <- descr_b (data_red$w1_hypt)
 dia <- descr_b (data_red$w1_diab)
-adl <- describe(data_red$w1_adl_sum)
-mem <- describe(data_red$w1_mem_sum)
 
 # show all descriptive stats in list
 list("age"        = age, 
@@ -39,9 +37,7 @@ list("age"        = age,
      "smoking"    = smo, 
      "bmi"        = bmi, 
      "hypert"     = hyp, 
-     "diabetes"   = dia, 
-     "adls"       = adl, 
-     "memory"     = mem)
+     "diabetes"   = dia)
 
 
 # 1.2) Descriptives observed and imputed data (Table S1)
@@ -56,8 +52,6 @@ i.smo <- describe_imputed("w1_heska",   bin = T)
 i.bmi <- describe_imputed("w0_bmival",  bin = F)
 i.hyp <- describe_imputed("w1_hypt",    bin = T)
 i.dia <- describe_imputed("w1_diab",    bin = T)
-i.adl <- describe_imputed("w1_adl_sum", bin = F)
-i.mem <- describe_imputed("w1_mem_sum", bin = F)
 
 # show all descriptive stats in list
 list("age"        = i.age, 
@@ -67,9 +61,7 @@ list("age"        = i.age,
      "smoking"    = i.smo, 
      "bmi"        = i.bmi, 
      "hypert"     = i.hyp, 
-     "diabetes"   = i.dia, 
-     "adls"       = i.adl, 
-     "memory"     = i.mem)
+     "diabetes"   = i.dia)
 
 
 # 1.3) Table S1: Descriptives observed and imputed covariates
@@ -82,70 +74,32 @@ mi_describe_frame = structure(list(
   # set variable names
   var = c("Age (in years)", "Male gender, yes", "White ethnicity, yes", 
           "Higher education, yes", "Current smoking, yes", "BMI (in kg/m²)", 
-          "Hypertension, yes", "Diabetes, yes", "ADLs", "Memory"), 
+          "Hypertension, yes", "Diabetes, yes"), 
   # get means or N from observed data
   o.m = c(age$mean, gen$yes, eth$yes, edu$yes, smo$yes, bmi$mean, hyp$yes, 
-          dia$yes, adl$mean, mem$mean),
+          dia$yes),
   # get SDs or % from observed data
-  o.sd = c(age$sd, po(gen), po(eth), po(edu), po(smo), bmi$sd, po(hyp), po(dia), 
-           adl$sd, mem$sd),
+  o.sd = c(age$sd, po(gen), po(eth), po(edu), po(smo), bmi$sd, po(hyp), po(dia)),
   # get % missing from observed data
   o.miss = c(pm_c(age$n),pm_b(gen), pm_b(eth), pm_b(edu), pm_b(smo), 
-             pm_c(bmi$n), pm_b(hyp), pm_b(dia), pm_c(adl$n), pm_c(mem$n)),
+             pm_c(bmi$n), pm_b(hyp), pm_b(dia)),
   # get pooled mean or N for imputed data
   i.pm = c(i.age$pooled_descriptives[1], i.gen$pooled_n, i.eth$pooled_n, 
            i.edu$pooled_n, i.smo$pooled_n, i.bmi$pooled_descriptives[1], 
-           i.hyp$pooled_n, i.dia$pooled_n, i.adl$pooled_descriptives[1], 
-           i.mem$pooled_descriptives[1]), 
+           i.hyp$pooled_n, i.dia$pooled_n), 
   # get pooled SD or % for imputed data
   i.psd = c(i.age$pooled_descriptives[2],i.gen$pool_perc, i.eth$pool_perc, 
             i.edu$pool_perc, i.smo$pool_perc, i.bmi$pooled_descriptives[2], 
-            i.hyp$pool_perc, i.dia$pool_perc, i.adl$pooled_descriptives[2], 
-            i.mem$pooled_descriptives[2]), 
+            i.hyp$pool_perc, i.dia$pool_perc), 
   # get SD of means or range for imputed data
   i.se = c(i.age$pooled_se$sd, i.gen$pool_range[1], i.eth$pool_range[1], 
            i.edu$pool_range[1], i.smo$pool_range[1], i.bmi$pooled_se$sd, 
-           i.hyp$pool_range[1], i.dia$pool_range[1], i.adl$pooled_se$sd, 
-           i.mem$pooled_se$sd),
+           i.hyp$pool_range[1], i.dia$pool_range[1]),
   # get second value for range
   i.se2 = c(0, i.gen$pool_range[2], i.eth$pool_range[2], i.edu$pool_range[2], 
-            i.smo$pool_range[2], 0, i.hyp$pool_range[2], i.dia$pool_range[2],
-            0, 0)), 
-  
+            i.smo$pool_range[2], 0, i.hyp$pool_range[2], i.dia$pool_range[2])), 
   class = "data.frame", 
   row.names = c(NA,-10L))
-
-### Create a flex table from descriptive data frame
-ts_one <- 
-  flextable(mi_describe_frame, col_keys = c("var", "o.m", "o.miss", "i.pm", "i.se")) 
-ts_one <- 
-  set_header_labels(ts_one, var = "", 
-                    o.m = "Observed data", o.miss = "Observed data",
-                    i.pm = "Imputed data", i.se = "Imputed data")
-ts_one <- 
-  flextable::compose(ts_one, j = "o.m", 
-                     value = as_paragraph("", as_chunk(sprintf("%.01f", o.m)),
-                                          " (", as_chunk(sprintf("%.01f", o.sd))))
-ts_one <- 
-  flextable::compose(ts_one, j = "i.pm", 
-                     value = as_paragraph("", as_chunk(sprintf("%.01f", i.pm)), 
-                                          " (", as_chunk(sprintf("%.01f", i.psd))))
-ts_one <- 
-  flextable::compose(ts_one, j = "i.se", 
-                     value = as_paragraph("", as_chunk(sprintf("%.01f", i.se)), 
-                                          "-", as_chunk(sprintf("%.01f", i.se2))))
-ts_one <- merge_at(ts_one, i = 1, j = 2:3, part = "header")
-ts_one <- merge_at(ts_one, i = 1, j = 4:5, part = "header")
-ts_one <- 
-  add_header_row(ts_one, values = c("","Mean (SD) or N (%)", "% missing",
-                                    "Pooled mean (SD) or N (%)", "SE or range"), 
-  top = FALSE)
-ts_one
-
-### Finally, export this bombastic table to word
-read_docx() %>% 
-  body_add_flextable(ts_one) %>% 
-  print(target = "analyses/output/table_s1.docx")
 
 
 # --------------------------------
@@ -164,7 +118,7 @@ lapply(matchedlist, summary)
 for (i in seq(matchedlist)) {
   psm.bal             <- bal.tab(matchedlist[[i]], binary = "std", un = T)
   psm.bal$Balance$var <- seq.int(nrow(psm.bal$Balance))
-  psm.bal             <- psm.bal$Balance[2:11,]
+  psm.bal             <- psm.bal$Balance[2:9,]
   psm.bal$var         <- as.factor(psm.bal$var)
   psm.bal$var         <- fct_rev(as_factor(psm.bal$var))
   psm.n.cont          <- matchedlist[[i]]$nn[[2]]
@@ -192,8 +146,6 @@ for (i in seq(matchedlist)) {
   abline(h =  6   , col = "grey70", lwd = 1, lty = 3)
   abline(h =  7   , col = "grey70", lwd = 1, lty = 3)
   abline(h =  8   , col = "grey70", lwd = 1, lty = 3)
-  abline(h =  9   , col = "grey70", lwd = 1, lty = 3)
-  abline(h = 10   , col = "grey70", lwd = 1, lty = 3)
   par(new = TRUE)
   # Plot adjusted standardised differences on top 
   plot(psm.bal$Diff.Adj, psm.bal$var, pch = 19, cex = 1.3, col = "#1B3A4E",
@@ -204,9 +156,9 @@ for (i in seq(matchedlist)) {
   mtext(paste("Matched: Stroke N =",psm.n.treat,"; Control N =", 
               psm.n.cont), 3, line = 1.3, cex = 1.4)
   mtext(paste("Sample", i),  3, line = 2.7, cex = 1.8, font = 2)
-  axis(2, at = 1:10, labels = F, tck = 0)
-  text(y = seq(1, 10, by = 1), par("usr")[1],
-       labels = c("Memory", "ADL", "Hypertension", "BMI",
+  axis(2, at = 1:8, labels = F, tck = 0)
+  text(y = seq(1, 8, by = 1), par("usr")[1],
+       labels = c("Hypertension", "BMI",
                   "Diabetes", "Smoking", "Education", "Ethnicity", "Gender", "Age"),
        srt = 0, pos = 2, xpd = TRUE, cex = 1.4)
   # Add legend to third plot
@@ -240,6 +192,7 @@ for (i in seq(matchedlist)) {
   dev.off()
 }
 
+
 # ---------------------------------------
 #  3.) Descriptive statistics (Table 2)
 # ---------------------------------------
@@ -259,8 +212,6 @@ obs.smo <- describeBy_imp("w1_heska",   impdat, binary = T, strokevar = "stroke"
 obs.bmi <- describeBy_imp("w0_bmival",  impdat, binary = F, strokevar = "stroke")
 obs.hyp <- describeBy_imp("w1_hypt",    impdat, binary = T, strokevar = "stroke")
 obs.dia <- describeBy_imp("w1_diab",    impdat, binary = T, strokevar = "stroke")
-obs.adl <- describeBy_imp("w1_adl_sum", impdat, binary = F, strokevar = "stroke")
-obs.mem <- describeBy_imp("w1_mem_sum", impdat, binary = F, strokevar = "stroke")
 
 # Show all descriptive stats in list
 list("age"        = obs.age, 
@@ -270,9 +221,7 @@ list("age"        = obs.age,
      "smoking"    = obs.smo, 
      "bmi"        = obs.bmi, 
      "hypert"     = obs.hyp, 
-     "diabetes"   = obs.dia, 
-     "adls"       = obs.adl, 
-     "memory"     = obs.mem)
+     "diabetes"   = obs.dia)
 
 
 # 3.1.2) For matched, imputded data - by caseness 
@@ -311,8 +260,6 @@ mat.smo <- describeBy_imp("w1_heska",  match_stack, binary = T, strokevar = "str
 mat.bmi <- describeBy_imp("w0_bmival", match_stack, binary = F, strokevar = "stroke")
 mat.hyp <- describeBy_imp("w1_hypt",   match_stack, binary = T, strokevar = "stroke")
 mat.dia <- describeBy_imp("w1_diab",   match_stack, binary = T, strokevar = "stroke")
-mat.adl <- describeBy_imp("w1_adl_sum",match_stack, binary = F, strokevar = "stroke")
-mat.mem <- describeBy_imp("w1_mem_sum",match_stack, binary = F, strokevar = "stroke")
 
 # Show all descriptive stats in list
 list("age"        = mat.age, 
@@ -322,9 +269,7 @@ list("age"        = mat.age,
      "smoking"    = mat.smo, 
      "bmi"        = mat.bmi, 
      "hypert"     = mat.hyp, 
-     "diabetes"   = mat.dia, 
-     "adls"       = mat.adl, 
-     "memory"     = mat.mem)
+     "diabetes"   = mat.dia)
 
 
 # 3.2) Calculate SMD 
@@ -358,10 +303,10 @@ std.un.mat <- laply(std.un.list, as.matrix)
 # Make a dataframe out of the matrix
 std.un.mat <- as.data.frame(std.un.mat)
 # Give column names for variables again
-names(std.un.mat)[2:11] <- c("age", "gender", "ethnicity", "edcation", "smoking", 
-                             "diabetes",  "bmi", "hypert", "adls", "memory")
+names(std.un.mat)[2:9] <- c("age", "gender", "ethnicity", "edcation", "smoking", 
+                             "diabetes",  "bmi", "hypert")
 # Now calculate column means of mean standardised differences in unmatched data
-colMeans(std.un.mat[2:11])
+colMeans(std.un.mat[2:9])
 
 
 # 3.2.2) For matched, imputded data 
@@ -386,9 +331,9 @@ std.ma.mat <- laply(std.ma.list, as.matrix)
 # Make a dataframe out of the matrix
 std.ma.mat <- as.data.frame(std.ma.mat)
 # Give column names for variables again
-names(std.ma.mat)[2:11] <- c("age", "gender", "ethnicity", "edcation", "smoking", 
-                             "diabetes",  "bmi", "hypert", "adls", "memory")
+names(std.ma.mat)[2:9] <- c("age", "gender", "ethnicity", "edcation", "smoking", 
+                             "diabetes",  "bmi", "hypert")
 # Now calculate column means of mean standardised differences in unmatched data
-colMeans(std.ma.mat[2:11])
+colMeans(std.ma.mat[2:9])
 
 

@@ -1,6 +1,6 @@
-## =============================
-## Propensity score matching
-## =============================
+# =============================
+# Propensity score matching
+# =============================
 
 # Load preprocessed data 
 load("data/processed/proc_data.RData")
@@ -16,7 +16,7 @@ impdat <- mice::complete(imp, action = "long", include = FALSE)
 
 # 1.1) Create function: fun_match()
 # --------------------------------
-# This function allows to conduct PSM in > 1 dataset and save the matched samples 
+# This function allows to conduct PSM in > 1 dataset + saves the matched samples 
 fun_match <- function(sample){
   # conduct the matching procedure
   matched <- matchit(stroke ~ 
@@ -28,14 +28,12 @@ fun_match <- function(sample){
                        w1_heska + 
                        w1_diab + 
                        w0_bmival + 
-                       w1_hypt + 
-                       w1_adl_sum + 
-                       w1_mem_sum,
+                       w1_hypt,
                      # matching details
                      data = sample,
                      method = "nearest", 
                      caliper = 0.2,
-                     ratio = 20 # N of controls matched to 1 case
+                     ratio = 10 # N of controls matched to 1 case
                      ) 
   # get and save matched data in wide format
   data.match.w <- match.data(matched)[1:ncol(data_mi)] 
@@ -75,7 +73,6 @@ matchedlist <-
 # ----------------------
 
 # Save the matched data and all the other data for further analyses
-save(matchlist, 
-     matchedlist, 
+save(matchlist, matchedlist, 
      file = "data/processed/matched_data.RData")
 

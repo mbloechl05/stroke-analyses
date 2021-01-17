@@ -1,6 +1,6 @@
-## ===============================
-##  Longitudinal data analysis
-## ===============================
+# ===============================
+#  Longitudinal data analysis
+# ===============================
 
 # Load imputed and matched data 
 load("data/processed/proc_data.RData") # preprocessed
@@ -12,6 +12,9 @@ impdat <- mice::complete(imp, action = "long", include = FALSE)
 # ----------------------------------------------
 # 1.) Data post-processing (for main analysis) 
 # ----------------------------------------------
+
+# 1.1.) Create data frame with all data and matched cases
+# --------------------------------------------------------
 
 # Extract matched matrix (contains matched cases) 
 fun_mm <- function(sample){
@@ -124,13 +127,15 @@ for( i in seq_along(finallist)){
   finallist[[i]] <- finallist[[i]] %>% fill(w7_time)
 }
 
-# delete one depression w2 column
-for( i in seq_along(finallist)){
-  finallist[[i]] <- dplyr::select(finallist[[i]], -c(w1_adl_sum.x, 
-                                                     w1_mem_sum.x))
-}
+# # delete some duplicate w2 columns
+# for( i in seq_along(finallist)){
+#   finallist[[i]] <- dplyr::select(finallist[[i]], -c(w1_adl_sum.x, 
+#                                                      w1_mem_sum.x))
+# }
 
-# shape to long format
+# 1.2.) Shape to long format 
+# ----------------------------
+
 for( i in seq_along(finallist)){
   # reshape each data frame into long format for modelling
   finallist[[i]] <- 
@@ -154,26 +159,33 @@ for( i in seq_along(finallist)){
             ), 
             timevar = "wave", 
             times = c("w1", "w2", "w3", "w4", "w5", "w6", "w7"), 
-            v.names = c("stroke", "time", "depress", "adl", "mem", "dep", 
+            v.names = c("stroke", "time", "depress", "adl", "mem", "dep",  
                         "eff", "sle", "hap", "lon", "enj", "sad", "goi"
             ))
   # make stroke variable a factor for the model
   finallist[[i]]$stroke.x <- as.factor(finallist[[i]]$stroke.x)
+  }
+  
+
+# 1.3.) Code parameter variables 
+# --------------------------------
+
+for( i in seq_along(finallist)){
   # code slope before stroke from time variable
   finallist[[i]] <- finallist[[i]] %>% 
     mutate(pre = dplyr::recode(time, 
-                                   `-6`= 0,
-                                   `-5`= 0,
-                                   `-4`= 0,
-                                   `-3`= 0, 
-                                   `-2`= 0, 
-                                   `-1`= 1, 
-                                   `0`= 0,
-                                   `1`= 0, 
-                                   `2`= 0, 
-                                   `3`= 0, 
-                                   `4`= 0, 
-                                   `5`= 0))
+                               `-6`= 0, 
+                               `-5`= 0,
+                               `-4`= 0,
+                               `-3`= 0, 
+                               `-2`= 0, 
+                               `-1`= 1, 
+                               `0`= 0,
+                               `1`= 0, 
+                               `2`= 0, 
+                               `3`= 0, 
+                               `4`= 0, 
+                               `5`= 0))
   # code jump intercept at stroke from time variable
   finallist[[i]] <- finallist[[i]] %>% 
     mutate(post = dplyr::recode(time, 
@@ -388,19 +400,14 @@ for( i in seq_along(finallist)){
 }
 
 
+# 1.4.) Create mitml list again for analyses
+# ---------------------------------------------
 
-# ---------------------
-# Longitudinal model
-# ---------------------
-
-# Data wrangling 
-# ----------------
-
-# First, unlist list of dataframe list to obtain dataframes in long format 
+# Next, unlist list of dataframe list to obtain dataframes in long format 
 for (i in seq(finallist))
   assign(paste0("data_final_long",i), finallist[[i]])
 
-# Then re-list them as mitml list for pooling
+# Finally, re-list them as mitml list for pooling
 finallist_model <- 
   as.mitml.list(list(data_final_long1,  data_final_long2,  data_final_long3,  
                      data_final_long4,  data_final_long5,  data_final_long6 , 
@@ -410,52 +417,302 @@ finallist_model <-
                      data_final_long16, data_final_long17, data_final_long18, 
                      data_final_long19, data_final_long20)) 
 
-# Model with dummy-coded variables
-# ----------------------------------
 
-# 1. Depressive symptoms
-# ------------------------
+# -------------------------------------
+# 2.) Longitudinal model - only stroke
+# -------------------------------------
 
-# Fit random-intercept multilevel models and get pooled estimates
-fit.dep <- with(finallist_model,
-            lmer(depress ~ 1 +
-                 #  dummy_minus6 +
-                   dummy_minus5 +
-                   dummy_minus4 +
-                   dummy_minus3 +
-                   dummy_minus2 +
-                   dummy_minus1 +
-                   dummy_plus1 +
-                   dummy_plus2 +
-                   dummy_plus3 +
-                   dummy_plus4 +
-                   dummy_plus5 +
-                   stroke.x +
-                  # n_strokes.x*dummy_minus6 +
-                   stroke.x*dummy_minus5 +
-                   stroke.x*dummy_minus4 +
-                   stroke.x*dummy_minus3 +
-                   stroke.x*dummy_minus2 +
-                   stroke.x*dummy_minus1 +
-                   stroke.x*dummy_plus1 +
-                   stroke.x*dummy_plus2 +
-                   stroke.x*dummy_plus3 +
-                   stroke.x*dummy_plus4 +
-                   stroke.x*dummy_plus5 + 
-                   (1 | idauniq), 
-                 REML = F))
+# subset stroke data 
+# (note: only need 1 long data set, all are the same for stroke)
+data_stroke <- subset(data_final_long1, stroke.x == 1)
 
-fit.dep.pool <- testEstimates(fit.dep) # Pooling (Rubin's rules)
-fit.dep.pool$estimates
+data_stroke <- subset(finallist[[1]], stroke.x == 1)
 
 
-# 2. Activities daily living
+# 2.0) Basic model 
+# ---------------------
+
+# Define model
+m.0 <- depress ~ 1 + post + (1 + post | idauniq)
+
+# Fit model
+fit.0 <- lmer(m.0, control = lmerControl(optimizer = "bobyqa"), 
+              REML = T, data = data_stroke)
+
+# get resutls
+summary(fit.0)
+confint(fit.0, level = 0.95, method = "Wald")
+
+
+# 2.1) Model without linear post-change
+# ---------------------------------------
+
+# Define model
+m.1 <- depress ~ 1 + pre + post + (1 + pre + post | idauniq)
+
+# Fit model
+fit.1 <- lmer(m.1, control = lmerControl(optimizer = "bobyqa"), 
+              REML = T, data = data_stroke)
+
+# get resutls
+summary(fit.1)
+confint(fit.1, level = 0.95, method = "Wald")
+
+
+# 2.2) Model with linear post-change
+# -----------------------------------
+
+# Define model
+m.2<- depress ~ 1 + pre + post + post_lin + 
+               (1 + pre + post + post_lin | idauniq)
+
+# Fir model
+fit.2 <- lmer(m.2, control = lmerControl(optimizer = "bobyqa"), 
+              REML = T, data = data_stroke)
+
+# get resutls
+summary(fit.2)
+confint(fit.2, level = 0.95, method = "Wald")
+
+# 2.3) Saturated model
+# ----------------------
+
+# Define model 
+m.3 <- depress ~ 1 + pre + dummy_zero + dummy_plus1 + dummy_plus2 + 
+       dummy_plus3 + dummy_plus4 + dummy_plus5 +
+       (1 + pre | idauniq)
+
+# Fit model
+fit.3 <- lmer(m.3, control = lmerControl(optimizer = "bobyqa"), 
+              REML = T, data = data_stroke)
+
+
+# 2.4) Model comparisons
 # ----------------------------
+
+# get AIC values
+AIC(fit.0, fit.1, fit.2, fit.3)
+
+
+# ----------------------------------------
+# 3.) Longitudinal model - with controls
+# ----------------------------------------
+
+# Define model 
+m.dep <- depress ~ 1 + pre + post + stroke.x + stroke.x*pre + stroke.x*post +
+                    (1 | idauniq)
+
+# Define and fit model
+fit.dep <- with(finallist_model, 
+                  lmer(depress ~ 1 + pre + post + 
+                         stroke.x + stroke.x*pre + stroke.x*post +
+                         (1 | idauniq), 
+                       control = lmerControl(optimizer = "nloptwrap"), 
+                       REML = T))
+
+# Pooling (Rubin's rules)
+fit.dep.pool <- testEstimates(fit.dep) 
+fit.dep.pool
+
+# Get 95% confidence intervals for estimates
+cis.dep.pool <- confint(fit.dep.pool, level = 0.95)
+cis.dep.pool
+
+
+# ----------------------------------------------
+# 4.) Depression Percentage, per group
+# ----------------------------------------------
+
+# Create new variable indicating whether people are > 3
+for( i in seq_along(finallist)){
+  # code slope before stroke from time variable
+  finallist[[i]] <- finallist[[i]] %>% 
+    mutate(dep_bin = ifelse(depress > 4, 1, 0))
+}
+
+# Time -3 
+# ----------
+
+# Create list of dataframes that only have time = -3 data
+data_list_m3 <- lapply(finallist, subset, time == -3 & 
+                         (stroke.x == 1 | stroke.x == 0))
+
+# Percentages 
+dep_stat_m3 <- dep_stat(data_list_m3)
+dep_stat_m3
+
+# combine pooled percentage values to data frame
+dep_res_m3 <- as.data.frame(c(dep_stat_m3[[1]]*100, dep_stat_m3[[2]]*100))
+names(dep_res_m3) <- "percent"
+
+# new variable indicating group
+dep_res_m3$group <- c("stroke", "controls")
+
+# Plot data
+ggplot(data = dep_res_m3, aes(y = percent, x = group, fill = group)) + 
+  geom_bar(position = position_dodge(),
+           stat = "identity", 
+           #colour = "black", 
+           size = .3, 
+           show.legend = F) +
+  theme_bw() +
+  theme(panel.border     = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title       = element_text(size = 15),
+        axis.line        = element_line(colour = "black"),
+        axis.text        = element_text(size = 15, colour = "black"),
+        legend.text      = element_text(size = 15)) +
+  labs(x = "",
+       y = "Prevalence (in %)") +
+  scale_x_discrete(breaks = c("controls", "stroke"),
+                   labels = c("Cont","Str")) +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,20),
+                     breaks = c(0,5,10,15,20)) +
+  scale_fill_manual(values=c('#d3d3d3','#8b4166'),
+                    name = "")
+
+
+# Time -1
+# ----------
+
+# Create list of dataframes that only have time = -1 data
+data_list_m1 <- lapply(finallist, subset, time == -1 & 
+                         (stroke.x == 1 | stroke.x == 0))
+
+# Percentages 
+dep_stat_m1 <- dep_stat(data_list_m1)
+dep_stat_m1
+
+# combine pooled percentage values to data frame
+dep_res_m1 <- as.data.frame(c(dep_stat_m1[[1]]*100, dep_stat_m1[[2]]*100))
+names(dep_res_m1) <- "percent"
+
+# new variable indicating group
+dep_res_m1$group <- c("stroke", "controls")
+
+# Plot data
+ggplot(data = dep_res_m1, aes(y = percent, x = group, fill = group)) + 
+  geom_bar(position = position_dodge(),
+           stat = "identity", 
+           #colour = "black", 
+           size = .3, 
+           show.legend = F) +
+  theme_bw() +
+  theme(panel.border     = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title       = element_text(size = 15),
+        axis.line        = element_line(colour = "black"),
+        axis.text        = element_text(size = 15, colour = "black"),
+        legend.text      = element_text(size = 15)) +
+  labs(x = "",
+       y = "Percent") +
+  scale_x_discrete(breaks = c("controls", "stroke"),
+                   labels = c("Cont","Str")) +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,20),
+                     breaks = c(0,5,10,15,20)) +
+  scale_fill_manual(values=c('#d3d3d3','#8b4166'),
+                    name = "")
+
+
+# Time 0
+# ----------
+
+# Create list of dataframes that only have time = 0 data
+data_list_0 <- lapply(finallist, subset, time == 0 & 
+                        (stroke.x == 1 | stroke.x == 0))
+
+# Percentages 
+dep_stat_0 <- dep_stat(data_list_0)
+dep_stat_0
+
+# combine pooled percentage values to data frame
+dep_res_0 <- as.data.frame(c(dep_stat_0[[1]]*100, dep_stat_0[[2]]*100))
+names(dep_res_0) <- "percent"
+
+# new variable indicating group
+dep_res_0$group <- c("stroke", "controls")
+
+# Plot data
+ggplot(data = dep_res_0, aes(y = percent, x = group, fill = group)) + 
+  geom_bar(position = position_dodge(),
+           stat = "identity", 
+           #colour = "black", 
+           size = .3, 
+           show.legend = F) +
+  theme_bw() +
+  theme(panel.border     = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title       = element_text(size = 15),
+        axis.line        = element_line(colour = "black"),
+        axis.text        = element_text(size = 15, colour = "black"),
+        legend.text      = element_text(size = 15)) +
+  labs(x = "",
+       y = "Percent") +
+  scale_x_discrete(breaks = c("controls", "stroke"),
+                   labels = c("Cont","Str")) +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,20),
+                     breaks = c(0,5,10,15,20)) +
+  scale_fill_manual(values=c('#d3d3d3','#8b4166'),
+                    name = "")
+
+
+# Time 3
+# ----------
+
+# Create list of dataframes that only have time = 3 data
+data_list_p3 <- lapply(finallist, subset, time == 3 & 
+                         (stroke.x == 1 | stroke.x == 0))
+
+# Percentages 
+dep_stat_p3 <- dep_stat(data_list_p3)
+dep_stat_p3
+
+# combine pooled percentage values to data frame
+dep_res_p3 <- as.data.frame(c(dep_stat_p3[[1]]*100, dep_stat_p3[[2]]*100))
+names(dep_res_p3) <- "percent"
+
+# new variable indicating group
+dep_res_p3$group <- c("stroke", "controls")
+
+# Plot data
+ggplot(data = dep_res_p3, aes(y = percent, x = group, fill = group)) + 
+  geom_bar(position = position_dodge(),
+           stat = "identity", 
+           #colour = "black", 
+           size = .3, 
+           show.legend = F) +
+  theme_bw() +
+  theme(panel.border     = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title       = element_text(size = 15),
+        axis.line        = element_line(colour = "black"),
+        axis.text        = element_text(size = 15, colour = "black"),
+        legend.text      = element_text(size = 15)) +
+  labs(x = "",
+       y = "Percent") +
+  scale_x_discrete(breaks = c("controls", "stroke"),
+                   labels = c("Cont","Str")) +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,20),
+                     breaks = c(0,5,10,15,20)) +
+  scale_fill_manual(values=c('#d3d3d3','#8b4166'),
+                    name = "")
+
+
+# ----------------------------------------------
+# 5.) Activities of daily living, longitudinal
+# ----------------------------------------------
 
 # Fit random-intercept multilevel models and get pooled estimates
 fit.adl <- with(finallist_model,
                 lmer(adl ~ 1 +
-                       #  dummy_minus6 +
                        dummy_minus5 +
                        dummy_minus4 +
                        dummy_minus3 +
@@ -467,7 +724,6 @@ fit.adl <- with(finallist_model,
                        dummy_plus4 +
                        dummy_plus5 +
                        stroke.x +
-                       # n_strokes.x*dummy_minus6 +
                        stroke.x*dummy_minus5 +
                        stroke.x*dummy_minus4 +
                        stroke.x*dummy_minus3 +
@@ -481,17 +737,22 @@ fit.adl <- with(finallist_model,
                        (1 | idauniq), 
                      REML = F))
 
-fit.adl.pool <- testEstimates(fit.adl) # Pooling (Rubin's rules)
+# Pooling (Rubin's rules)
+fit.adl.pool <- testEstimates(fit.adl) 
 fit.adl.pool$estimates
 
+# Get 95% confidence intervals for estimates
+cis.adl.pool <- confint(fit.adl.pool, level = 0.95)
+cis.adl.pool
 
-# 3. Memory functioning
-# ----------------------------
+
+# ---------------------------------------
+# 6.) Memory functioning, longitudinal
+# ---------------------------------------
 
 # Fit random-intercept multilevel models and get pooled estimates
 fit.mem <- with(finallist_model,
                 lmer(mem ~ 1 +
-                       #  dummy_minus6 +
                        dummy_minus5 +
                        dummy_minus4 +
                        dummy_minus3 +
@@ -503,7 +764,6 @@ fit.mem <- with(finallist_model,
                        dummy_plus4 +
                        dummy_plus5 +
                        stroke.x +
-                       # n_strokes.x*dummy_minus6 +
                        stroke.x*dummy_minus5 +
                        stroke.x*dummy_minus4 +
                        stroke.x*dummy_minus3 +
@@ -520,240 +780,207 @@ fit.mem <- with(finallist_model,
 fit.mem.pool <- testEstimates(fit.mem) # Pooling (Rubin's rules)
 fit.mem.pool$estimates
 
-
-
-# ----------------------
-# Model with controls
-# ----------------------
-
-# 1.) Without random effects
-
-# Fit random-intercept multilevel models and get pooled estimates
-fit <- with(finallist_model,
-            lmer(depress ~
-                   1 + 
-                   pre + 
-                   post + 
-                   stroke.x + 
-                   stroke.x*pre +
-                   stroke.x*post +
-                   (1 + post | idauniq),
-                 control = lmerControl(optimizer = "bobyqa"), REML = F))
-
-fit.pool <- testEstimates(fit) # Pooling (Rubin's rules)
-fit.pool$estimates
-
 # Get 95% confidence intervals for estimates
-confint(fit.pool, level = 0.95)
+cis.mem.pool <- confint(fit.mem.pool, level = 0.95)
+cis.mem.pool
 
 
-# 2.) With random effects
+# -------------------------------------------------------
+# 7.) Longitudinal model - only stroke, with predictors
+# -------------------------------------------------------
 
-# Fit random-intercept multilevel models and get pooled estimates
-fit <- with(finallist_model,
-            lmer(depress ~
-                   1 + pre + post + stroke.x + stroke.x*pre +
-                   stroke.x*post +
-                   (1 + pre + post | idauniq),
-                 control = lmerControl(optimizer = "bobyqa"), REML = F))
-
-fit.pool <- testEstimates(fit) # Pooling (Rubin's rules)
-fit.pool$estimates
-
-# Get 95% confidence intervals for estimates
-confint(fit.pool, level = 0.95)
+# Define model (note this model contains a generic variable "pred")
+m.pred <- depress ~ 1 + pre + post + pred + pred:pre + pred:post +
+  (1 + pre + post | idauniq)
 
 
-# 3.) saturated model
+# 7.1.) Age
+# -----------
 
-# I am not sure how to get AICs with the pooled models, so i will just compare 
-# the fit using the data from only strokes, as below 
+# replace placeholder with age var
+data_stroke$w1_age_c <- scale(data_stroke$w1_dhager.x, center = T)
+data_stroke$pred <- data_stroke$w1_age_c
 
-
-# -------------------------------------
-# Model only strokes, random effects
-# -------------------------------------
-
-# subset stroke data 
-# (note: only need 1 long data set, all are the same for stroke)
-data_stroke <- subset(data_final_long1, stroke.x == 1)
-
-# a) without linear post-change
-# --------------------------------
-
-# Fit random-intercept multilevel models and get pooled estimates
-fit_a <- lmer(depress ~ 
-                # fixed effects 
-                1 + 
-                pre + 
-                post + 
-                # random effects
-                (1 + 
-                   pre + 
-                   post | 
-                   idauniq),
-              # control parameters
-              control = lmerControl(optimizer = "bobyqa"), 
-              REML = T, 
-              data = data_stroke)
-
-# summary of fit
-summary(fit_a)
-AIC(fit_a)
+# fit model and get results
+fit.age <- lmer(m.pred, control = lmerControl(optimizer = "bobyqa"), 
+                REML = T, data = data_stroke)
+summary(fit.age)
 
 
-# b) with linear post-change
-# ----------------------------
+# 7.2.) Sex
+# ------------
 
-# Fit random-intercept multilevel models and get pooled estimates
-fit_b <- lmer(depress ~ 1 + 
-                pre + 
-                post + 
-                post_lin + 
-                (1 + 
-                   pre + 
-                   post + 
-                   post_lin | 
-                   idauniq),
-              control = lmerControl(optimizer = "bobyqa"), 
-              REML = T, 
-              data = data_stroke)
+# replace placeholder with sex var
+data_stroke$pred <- data_stroke$w1_dhsex.x
 
-# summary of fit
-summary(fit_b)
-AIC(fit_b)
+# fit model and get results
+fit.sex <- lmer(m.pred, control = lmerControl(optimizer = "bobyqa"), 
+                REML = T, data = data_stroke)
+summary(fit.sex)
 
 
-# c) saturated model
-# ----------------------------
+# 7.3.) Education
+# ----------------
 
-# Fit random-intercept multilevel models and get pooled estimates
-fit_c <- lmer(depress ~ 
-                1 + 
-                pre + 
-                dummy_zero + 
-                dummy_plus1 + 
-                dummy_plus2 + 
-                dummy_plus3 + 
-                dummy_plus4 + 
-                dummy_plus5 +
-                (1 + 
-                   pre + 
-                   dummy_zero |
-                   idauniq),
-              control = lmerControl(optimizer = "bobyqa"), 
-              REML = T, 
-              data = data_stroke)
+# replace placeholder with education var
+data_stroke$pred <- data_stroke$w0_educ.x
 
-# summary of fit
-summary(fit_c)
-AIC(fit_c)
+# fit model and get results
+fit.edu <- lmer(m.pred, control = lmerControl(optimizer = "bobyqa"), 
+                REML = T, data = data_stroke)
+summary(fit.edu)
 
 
-# d) predictors
-# ----------------------------
+# 7.4.) Ethnicity
+# ------------------
 
-# Fit random-intercept multilevel models and get pooled estimates
-fit_d <- lmer(depress ~ 
-                # fixed effects 
-                1 + 
-                pre + 
-                post + 
-                w1_dhsex.y +
-                w1_dhsex.y:pre +
-                w1_dhsex.y:post +
-                # random effects
-                (1 + 
-                   post | 
-                   idauniq),
-              # control parameters
-              control = lmerControl(optimizer = "bobyqa"), 
-              REML = F, 
-              data = data_stroke)
+# replace placeholder with ethnicity var
+data_stroke$pred <- data_stroke$w0_educ.x
 
-# summary of fit
-summary(fit_d)
+# fit model and get results
+fit.eth <- lmer(m.pred, control = lmerControl(optimizer = "bobyqa"), 
+                REML = T, data = data_stroke)
+summary(fit.eth)
 
 
+# 7.5.) ADL at time 0
+# ---------------------
 
 # create new variable indicating ADL at time 0
 data_stroke <- 
   data_stroke %>%
   group_by(idauniq) %>%
   mutate(
-    adl_zero = adl[time == 0]
+    pred = adl[time == 0]
   )
-  
 
-# create new variable indicating ADL at time 0
+# fit model and get results
+fit.adl <- lmer(m.pred, control = lmerControl(optimizer = "bobyqa"), 
+                REML = T, data = data_stroke)
+summary(fit.adl)
+
+
+# 7.6.) Memory at time 0
+# ------------------------
+
+# create new variable indicating memory at time 0
 data_stroke <- 
   data_stroke %>%
   group_by(idauniq) %>%
   mutate(
-    mem_zero = mem[time == 0]
+    pred = mem[time == 0]
   )
 
+# fit model and get results
+fit.mem <- lmer(m.pred, control = lmerControl(optimizer = "bobyqa"), 
+                REML = T, data = data_stroke)
+summary(fit.mem)
 
-# -----------------------
-# Model-implied plots
-# -----------------------
 
-# 1. Depressive symptoms 
+# 7.7.) ADL at time -1
+# ---------------------
+
+# create new variable indicating ADL at time -1
+data_stroke <- 
+  data_stroke %>%
+  group_by(idauniq) %>%
+  mutate(
+    pred = adl[time == -1]
+  )
+
+# fit model and get results
+fit.adl <- lmer(m.pred, control = lmerControl(optimizer = "bobyqa"), 
+                REML = T, data = data_stroke)
+summary(fit.adl)
+
+
+# 7.8.) Memory at time -1
+# ------------------------
+
+# create new variable indicating memory at time -1
+data_stroke <- 
+  data_stroke %>%
+  group_by(idauniq) %>%
+  mutate(
+    pred = mem[time == -1]
+  )
+
+# fit model and get results
+fit.mem <- lmer(m.pred, control = lmerControl(optimizer = "bobyqa"), 
+                REML = T, data = data_stroke)
+summary(fit.mem)
+
+
 # -------------------------
+# 8.) Model-implied plots
+# --------------------------
 
-# Create object with pooled model fit coefficients
-ef.fit.b  <- fit.dep.pool$estimates[1:22]
-ef.fit.se <- fit.dep.pool$estimates[23:44]
-ef.fit    <- data.frame(ef.fit.b, ef.fit.se)
+# 8.1) Depressive symptoms
+# ---------------------------
 
-# Calculate means for plotting
-ef.fit$ef.fit.b[13] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[2]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[13] 
-ef.fit$ef.fit.b[14] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[3]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[14] 
-ef.fit$ef.fit.b[15] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[4]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[15] 
-ef.fit$ef.fit.b[16] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[5]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[16] 
-ef.fit$ef.fit.b[17] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[6]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[17] 
-ef.fit$ef.fit.b[18] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[7]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[18] 
-ef.fit$ef.fit.b[19] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[8]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[19] 
-ef.fit$ef.fit.b[20] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[9]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[20] 
-ef.fit$ef.fit.b[21] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[10] + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[21] 
-ef.fit$ef.fit.b[22] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[11] + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[22] 
-ef.fit$ef.fit.b[12] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[12] 
-ef.fit$ef.fit.b[2]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[2] 
-ef.fit$ef.fit.b[3]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[3] 
-ef.fit$ef.fit.b[4]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[4] 
-ef.fit$ef.fit.b[5]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[5] 
-ef.fit$ef.fit.b[6]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[6] 
-ef.fit$ef.fit.b[7]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[7] 
-ef.fit$ef.fit.b[8]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[8] 
-ef.fit$ef.fit.b[9]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[9] 
-ef.fit$ef.fit.b[10] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[10] 
-ef.fit$ef.fit.b[11] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[11]
+# Create object with pooled model fixed effects
+est <- fit.dep.pool$estimates[1:6]
+cil <- cis.dep.pool[1:6]
+
+# Make data frame for all fixes effects
+fe <- data.frame(est, cil)
 
 # Name pooled effects
-ef.fit$st.case <- c("Controls", "Controls", "Controls", "Controls", "Controls", 
-                    "Controls", "Controls", "Controls", "Controls", "Controls", 
-                    "Controls", 
-                    "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", 
-                    "Stroke", "Stroke", "Stroke", "Stroke", "Stroke")
-ef.fit$time    <- c(0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10, 
-                    0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10)
+fe$st.case <- c("Controls", "Controls", "Controls", 
+                "Stroke", "Stroke", "Stroke")
+fe$time    <- c(-10, -2, 0, -10, -2, 0)
+
+# Calculate diff between est and ci
+fe$ci[1] <- fe$est[1] - fe$cil[1]
+fe$ci[2] <- fe$est[2] - fe$cil[2]
+fe$ci[3] <- fe$est[3] - fe$cil[3]
+fe$ci[4] <- fe$est[4] - fe$cil[4]
+fe$ci[5] <- fe$est[5] - fe$cil[5]
+fe$ci[6] <- fe$est[6] - fe$cil[6]
+
+# Calculate fixed effects for plotting
+fe$est[5] <- fe$est[1] + fe$est[2] + fe$est[4] + fe$est[5] 
+fe$est[6] <- fe$est[1] + fe$est[3] + fe$est[4] + fe$est[6] 
+fe$est[2] <- fe$est[1] + fe$est[2] 
+fe$est[3] <- fe$est[1] + fe$est[3] 
+fe$est[4] <- fe$est[1] + fe$est[4]  
+
+# Make new data frame with remaining effects
+fe.2 <- 
+  data.frame(est = c(fe$est[1], fe$est[1], fe$est[1], fe$est[3], fe$est[3], 
+                     fe$est[3], fe$est[3], fe$est[3], fe$est[4], fe$est[4], 
+                     fe$est[4], fe$est[6], fe$est[6], fe$est[6], fe$est[6], 
+                     fe$est[6]), 
+             st.case = c("Controls", "Controls", "Controls", "Controls", 
+                         "Controls", "Controls", "Controls", "Controls", 
+                         "Stroke", "Stroke", "Stroke", "Stroke", 
+                         "Stroke", "Stroke", "Stroke", "Stroke"), 
+             time = c(-8,-6,-4,2,4,6,8,10, -8,-6,-4,2,4,6,8,10), 
+             ci  = c(fe$ci[1], fe$ci[1], fe$ci[1], fe$ci[3], fe$ci[3], 
+                     fe$ci[3], fe$ci[3], fe$ci[3], fe$ci[4], fe$ci[4], 
+                     fe$ci[4], fe$ci[6], fe$ci[6], fe$ci[6], fe$ci[6], 
+                     fe$ci[6]))
+
+# Bind both data frames together
+fe <- rbind(fe[,c(1,3:5)], fe.2)
 
 # Draw figure
 fig_dep_long <- 
-  ggplot(ef.fit, aes(x = time, y = ef.fit.b)) +
+  ggplot(fe, aes(x = time, y = est)) +
+  geom_ribbon(aes(ymin = est-ci, ymax = est + ci, fill = st.case), alpha = 0.3) +
   geom_line(aes(colour = st.case), size = 1.2)  +
-  geom_errorbar(aes(ymin = ef.fit.b - ef.fit.se, ymax = ef.fit.b + ef.fit.se, 
-                    colour = st.case), 
-                size = 0.7, width = .3) +
   geom_vline(xintercept = -1, linetype = "dashed", 
              color = "black", size = 0.5) +
   labs(y = "Depressive symptoms", x = "Time in years") +
-  scale_colour_manual(values = c("#cccccc", "#d4738b"), 
+  scale_colour_manual(values = c("#b7b7b7", "#d4738b"), 
                       breaks = c("Controls", "Stroke"),
                       labels = c("Matched controls ", "Stroke survivors ")) +
-  coord_cartesian(ylim = c(0,2.6)) +
+  scale_fill_manual(values = c("#b7b7b7", "#d4738b"), 
+                      breaks = c("Controls", "Stroke"),
+                      labels = c("Matched controls ", "Stroke survivors ")) +
+  coord_cartesian(ylim = c(1,2.6)) +
   scale_y_continuous(expand = c(0, 0), 
-                     breaks = c(0.0,1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6)) +
+                     breaks = c(1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6)) +
   scale_x_continuous(breaks = c(-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10)) +
   theme_classic(base_size = 15)+
   theme(axis.title.x = element_text(colour = "black", size = 19, 
@@ -771,133 +998,88 @@ fig_dep_long <-
         legend.position = "top")
 
 
-# 2. Activities daily living
-# ----------------------------
+# 8.2) Activities of daily living
+# --------------------------------
 
 # Create object with pooled model fit coefficients
-ef.fit.b  <- fit.adl.pool$estimates[1:22]
-ef.fit.se <- fit.adl.pool$estimates[23:44]
-ef.fit    <- data.frame(ef.fit.b, ef.fit.se)
+est <- fit.adl.pool$estimates[1:22]
+cil <- cis.adl.pool[1:22]
+
+# Make data frame for all fixes effects
+fe <- data.frame(est, cil)
+
+# Calculate diff between est and ci
+fe$ci[1]  <- fe$est[1]  - fe$cil[1] 
+fe$ci[2]  <- fe$est[2]  - fe$cil[2] 
+fe$ci[3]  <- fe$est[3]  - fe$cil[3] 
+fe$ci[4]  <- fe$est[4]  - fe$cil[4] 
+fe$ci[5]  <- fe$est[5]  - fe$cil[5] 
+fe$ci[6]  <- fe$est[6]  - fe$cil[6] 
+fe$ci[7]  <- fe$est[7]  - fe$cil[7] 
+fe$ci[8]  <- fe$est[8]  - fe$cil[8] 
+fe$ci[9]  <- fe$est[9]  - fe$cil[9] 
+fe$ci[10] <- fe$est[10] - fe$cil[10]
+fe$ci[11] <- fe$est[11] - fe$cil[11]
+fe$ci[12] <- fe$est[12] - fe$cil[12]
+fe$ci[13] <- fe$est[13] - fe$cil[13]
+fe$ci[14] <- fe$est[14] - fe$cil[14]
+fe$ci[15] <- fe$est[15] - fe$cil[15]
+fe$ci[16] <- fe$est[16] - fe$cil[16]
+fe$ci[17] <- fe$est[17] - fe$cil[17]
+fe$ci[18] <- fe$est[18] - fe$cil[18]
+fe$ci[19] <- fe$est[19] - fe$cil[19]
+fe$ci[20] <- fe$est[20] - fe$cil[20]
+fe$ci[21] <- fe$est[21] - fe$cil[21]
+fe$ci[22] <- fe$est[22] - fe$cil[22]
 
 # Calculate means for plotting
-ef.fit$ef.fit.b[13] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[2]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[13] 
-ef.fit$ef.fit.b[14] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[3]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[14] 
-ef.fit$ef.fit.b[15] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[4]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[15] 
-ef.fit$ef.fit.b[16] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[5]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[16] 
-ef.fit$ef.fit.b[17] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[6]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[17] 
-ef.fit$ef.fit.b[18] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[7]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[18] 
-ef.fit$ef.fit.b[19] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[8]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[19] 
-ef.fit$ef.fit.b[20] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[9]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[20] 
-ef.fit$ef.fit.b[21] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[10] + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[21] 
-ef.fit$ef.fit.b[22] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[11] + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[22] 
-ef.fit$ef.fit.b[12] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[12] 
-ef.fit$ef.fit.b[2]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[2] 
-ef.fit$ef.fit.b[3]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[3] 
-ef.fit$ef.fit.b[4]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[4] 
-ef.fit$ef.fit.b[5]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[5] 
-ef.fit$ef.fit.b[6]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[6] 
-ef.fit$ef.fit.b[7]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[7] 
-ef.fit$ef.fit.b[8]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[8] 
-ef.fit$ef.fit.b[9]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[9] 
-ef.fit$ef.fit.b[10] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[10] 
-ef.fit$ef.fit.b[11] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[11]
+fe$est[13] <- fe$est[1] + fe$est[2]  + fe$est[12] + fe$est[13] 
+fe$est[14] <- fe$est[1] + fe$est[3]  + fe$est[12] + fe$est[14] 
+fe$est[15] <- fe$est[1] + fe$est[4]  + fe$est[12] + fe$est[15] 
+fe$est[16] <- fe$est[1] + fe$est[5]  + fe$est[12] + fe$est[16] 
+fe$est[17] <- fe$est[1] + fe$est[6]  + fe$est[12] + fe$est[17] 
+fe$est[18] <- fe$est[1] + fe$est[7]  + fe$est[12] + fe$est[18] 
+fe$est[19] <- fe$est[1] + fe$est[8]  + fe$est[12] + fe$est[19] 
+fe$est[20] <- fe$est[1] + fe$est[9]  + fe$est[12] + fe$est[20] 
+fe$est[21] <- fe$est[1] + fe$est[10] + fe$est[12] + fe$est[21] 
+fe$est[22] <- fe$est[1] + fe$est[11] + fe$est[12] + fe$est[22] 
+fe$est[12] <- fe$est[1] + fe$est[12] 
+fe$est[2]  <- fe$est[1] + fe$est[2] 
+fe$est[3]  <- fe$est[1] + fe$est[3] 
+fe$est[4]  <- fe$est[1] + fe$est[4] 
+fe$est[5]  <- fe$est[1] + fe$est[5] 
+fe$est[6]  <- fe$est[1] + fe$est[6] 
+fe$est[7]  <- fe$est[1] + fe$est[7] 
+fe$est[8]  <- fe$est[1] + fe$est[8] 
+fe$est[9]  <- fe$est[1] + fe$est[9] 
+fe$est[10] <- fe$est[1] + fe$est[10] 
+fe$est[11] <- fe$est[1] + fe$est[11]
 
 # Name pooled effects
-ef.fit$st.case <- c("Controls", "Controls", "Controls", "Controls", "Controls", 
-                    "Controls", "Controls", "Controls", "Controls", "Controls", 
-                    "Controls", 
-                    "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", 
-                    "Stroke", "Stroke", "Stroke", "Stroke", "Stroke")
-ef.fit$time    <- c(0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10, 
-                    0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10)
+fe$st.case <- c("Controls", "Controls", "Controls", "Controls", "Controls", 
+                "Controls", "Controls", "Controls", "Controls", "Controls", 
+                "Controls", 
+                "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", 
+                "Stroke", "Stroke", "Stroke", "Stroke", "Stroke")
+fe$time    <- c(0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10, 
+                0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10)
 
 # Draw figure
 fig_adl_long <- 
-  ggplot(ef.fit, aes(x = time, y = ef.fit.b)) +
+  ggplot(fe, aes(x = time, y = est)) +
   geom_line(aes(colour = st.case), size = 1.2)  +
-  geom_errorbar(aes(ymin = ef.fit.b - ef.fit.se, ymax = ef.fit.b + ef.fit.se, 
-                    colour = st.case), 
-                size = 0.7, width = .3) +
+  geom_ribbon(aes(ymin = est - ci, ymax = est + ci,
+              fill = st.case), alpha = 0.3) +
   geom_vline(xintercept = -1, linetype = "dashed", 
              color = "black", size = 0.5) +
   labs(y = "ADL", x = "Time in years") +
   scale_colour_manual(values = c("#cccccc", "#7fb5bd"), 
                       breaks = c("Controls", "Stroke"),
                       labels = c("Matched controls ", "Stroke survivors ")) +
+  scale_fill_manual(values = c("#cccccc", "#7fb5bd"), 
+                    breaks = c("Controls", "Stroke"),
+                    labels = c("Matched controls ", "Stroke survivors ")) +
   coord_cartesian(ylim = c(0, 2)) +
-#  scale_y_continuous(expand = c(0, 0), 
-#                     breaks = c(1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6)) +
-  scale_x_continuous(breaks = c(-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10)) +
-  theme_classic(base_size = 15)+
-  theme(axis.title.x = element_text(colour = "black", size = 19, 
-                                    margin = margin(t = 0, r = 15, b = 0, l = 0)), 
-        axis.title.y = element_text(colour = "black", size = 19, 
-                                    margin = margin(t = 0, r = 15, b = 0, l = 0)),         
-        axis.text.x  = element_text(colour = "black", size = 19, 
-                                    margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.text.y  = element_text(colour = "black", size = 19), 
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(), 
-        legend.text  = element_text(colour = "black", size = 15), 
-        legend.title = element_blank(),
-        legend.position = "top")
-
-
-# 3. Memory functioning
-# ----------------------------
-
-# Create object with pooled model fit coefficients
-ef.fit.b  <- fit.mem.pool$estimates[1:22]
-ef.fit.se <- fit.mem.pool$estimates[23:44]
-ef.fit    <- data.frame(ef.fit.b, ef.fit.se)
-
-# Calculate means for plotting
-ef.fit$ef.fit.b[13] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[2]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[13] 
-ef.fit$ef.fit.b[14] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[3]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[14] 
-ef.fit$ef.fit.b[15] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[4]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[15] 
-ef.fit$ef.fit.b[16] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[5]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[16] 
-ef.fit$ef.fit.b[17] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[6]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[17] 
-ef.fit$ef.fit.b[18] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[7]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[18] 
-ef.fit$ef.fit.b[19] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[8]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[19] 
-ef.fit$ef.fit.b[20] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[9]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[20] 
-ef.fit$ef.fit.b[21] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[10] + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[21] 
-ef.fit$ef.fit.b[22] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[11] + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[22] 
-ef.fit$ef.fit.b[12] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[12] 
-ef.fit$ef.fit.b[2]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[2] 
-ef.fit$ef.fit.b[3]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[3] 
-ef.fit$ef.fit.b[4]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[4] 
-ef.fit$ef.fit.b[5]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[5] 
-ef.fit$ef.fit.b[6]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[6] 
-ef.fit$ef.fit.b[7]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[7] 
-ef.fit$ef.fit.b[8]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[8] 
-ef.fit$ef.fit.b[9]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[9] 
-ef.fit$ef.fit.b[10] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[10] 
-ef.fit$ef.fit.b[11] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[11]
-
-# Name pooled effects
-ef.fit$st.case <- c("Controls", "Controls", "Controls", "Controls", "Controls", 
-                    "Controls", "Controls", "Controls", "Controls", "Controls", 
-                    "Controls", 
-                    "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", 
-                    "Stroke", "Stroke", "Stroke", "Stroke", "Stroke")
-ef.fit$time    <- c(0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10, 
-                    0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10)
-
-# Draw figure
-fig_mem_long <- 
-  ggplot(ef.fit, aes(x = time, y = ef.fit.b)) +
-  geom_line(aes(colour = st.case), size = 1.2)  +
-  geom_errorbar(aes(ymin = ef.fit.b - ef.fit.se, ymax = ef.fit.b + ef.fit.se, 
-                    colour = st.case), 
-                size = 0.7, width = .3) +
-  geom_vline(xintercept = -1, linetype = "dashed", 
-             color = "black", size = 0.5) +
-  labs(y = "Memory score", x = "Time in years") +
-  scale_colour_manual(values = c("#cccccc", "#7fb5bd"), 
-                      breaks = c("Controls", "Stroke"),
-                      labels = c("Matched controls ", "Stroke survivors ")) +
- # coord_cartesian(ylim = c(1.0,2.6)) +
   #  scale_y_continuous(expand = c(0, 0), 
   #                     breaks = c(1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6)) +
   scale_x_continuous(breaks = c(-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10)) +
@@ -917,6 +1099,239 @@ fig_mem_long <-
         legend.position = "top")
 
 
+# 8.3) Memory performance
+# -----------------------------
+
+# Create object with pooled model fit coefficients
+est <- fit.mem.pool$estimates[1:22]
+cil <- cis.mem.pool[1:22]
+
+# Make data frame for all fixes effects
+fe <- data.frame(est, cil)
+
+# Calculate diff between est and ci
+fe$ci[1]  <- fe$est[1]  - fe$cil[1] 
+fe$ci[2]  <- fe$est[2]  - fe$cil[2] 
+fe$ci[3]  <- fe$est[3]  - fe$cil[3] 
+fe$ci[4]  <- fe$est[4]  - fe$cil[4] 
+fe$ci[5]  <- fe$est[5]  - fe$cil[5] 
+fe$ci[6]  <- fe$est[6]  - fe$cil[6] 
+fe$ci[7]  <- fe$est[7]  - fe$cil[7] 
+fe$ci[8]  <- fe$est[8]  - fe$cil[8] 
+fe$ci[9]  <- fe$est[9]  - fe$cil[9] 
+fe$ci[10] <- fe$est[10] - fe$cil[10]
+fe$ci[11] <- fe$est[11] - fe$cil[11]
+fe$ci[12] <- fe$est[12] - fe$cil[12]
+fe$ci[13] <- fe$est[13] - fe$cil[13]
+fe$ci[14] <- fe$est[14] - fe$cil[14]
+fe$ci[15] <- fe$est[15] - fe$cil[15]
+fe$ci[16] <- fe$est[16] - fe$cil[16]
+fe$ci[17] <- fe$est[17] - fe$cil[17]
+fe$ci[18] <- fe$est[18] - fe$cil[18]
+fe$ci[19] <- fe$est[19] - fe$cil[19]
+fe$ci[20] <- fe$est[20] - fe$cil[20]
+fe$ci[21] <- fe$est[21] - fe$cil[21]
+fe$ci[22] <- fe$est[22] - fe$cil[22]
+
+# Calculate means for plotting
+fe$est[13] <- fe$est[1] + fe$est[2]  + fe$est[12] + fe$est[13] 
+fe$est[14] <- fe$est[1] + fe$est[3]  + fe$est[12] + fe$est[14] 
+fe$est[15] <- fe$est[1] + fe$est[4]  + fe$est[12] + fe$est[15] 
+fe$est[16] <- fe$est[1] + fe$est[5]  + fe$est[12] + fe$est[16] 
+fe$est[17] <- fe$est[1] + fe$est[6]  + fe$est[12] + fe$est[17] 
+fe$est[18] <- fe$est[1] + fe$est[7]  + fe$est[12] + fe$est[18] 
+fe$est[19] <- fe$est[1] + fe$est[8]  + fe$est[12] + fe$est[19] 
+fe$est[20] <- fe$est[1] + fe$est[9]  + fe$est[12] + fe$est[20] 
+fe$est[21] <- fe$est[1] + fe$est[10] + fe$est[12] + fe$est[21] 
+fe$est[22] <- fe$est[1] + fe$est[11] + fe$est[12] + fe$est[22] 
+fe$est[12] <- fe$est[1] + fe$est[12] 
+fe$est[2]  <- fe$est[1] + fe$est[2] 
+fe$est[3]  <- fe$est[1] + fe$est[3] 
+fe$est[4]  <- fe$est[1] + fe$est[4] 
+fe$est[5]  <- fe$est[1] + fe$est[5] 
+fe$est[6]  <- fe$est[1] + fe$est[6] 
+fe$est[7]  <- fe$est[1] + fe$est[7] 
+fe$est[8]  <- fe$est[1] + fe$est[8] 
+fe$est[9]  <- fe$est[1] + fe$est[9] 
+fe$est[10] <- fe$est[1] + fe$est[10] 
+fe$est[11] <- fe$est[1] + fe$est[11]
+
+# Name pooled effects
+fe$st.case <- c("Controls", "Controls", "Controls", "Controls", "Controls", 
+                "Controls", "Controls", "Controls", "Controls", "Controls", 
+                "Controls", 
+                "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", 
+                "Stroke", "Stroke", "Stroke", "Stroke", "Stroke")
+fe$time    <- c(0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10, 
+                0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10)
+
+# Draw figure
+fig_mem_long <- 
+  ggplot(fe, aes(x = time, y = est)) +
+  geom_line(aes(colour = st.case), size = 1.2)  +
+  geom_ribbon(aes(ymin = est - ci, ymax = est + ci,
+                  fill = st.case), alpha = 0.3) +
+  geom_vline(xintercept = -1, linetype = "dashed", 
+             color = "black", size = 0.5) +
+  labs(y = "Memory", x = "Time in years") +
+  scale_colour_manual(values = c("#cccccc", "#7fb5bd"), 
+                      breaks = c("Controls", "Stroke"),
+                      labels = c("Matched controls ", "Stroke survivors ")) +
+  scale_fill_manual(values = c("#cccccc", "#7fb5bd"), 
+                    breaks = c("Controls", "Stroke"),
+                    labels = c("Matched controls ", "Stroke survivors ")) +
+  coord_cartesian(ylim = c(3.5, 10.5)) +
+  scale_y_continuous(expand = c(0, 0), 
+                     breaks = c(4, 5, 6, 7, 8, 9, 10)) +
+  scale_x_continuous(breaks = c(-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10)) +
+  theme_classic(base_size = 15)+
+  theme(axis.title.x = element_text(colour = "black", size = 19, 
+                                    margin = margin(t = 0, r = 15, b = 0, l = 0)), 
+        axis.title.y = element_text(colour = "black", size = 19, 
+                                    margin = margin(t = 0, r = 15, b = 0, l = 0)),         
+        axis.text.x  = element_text(colour = "black", size = 19, 
+                                    margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.text.y  = element_text(colour = "black", size = 19), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        legend.text  = element_text(colour = "black", size = 15), 
+        legend.title = element_blank(),
+        legend.position = "top")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 
+# 
+# 
+# # Model with dummy-coded variables
+# # ----------------------------------
+# 
+# # Fit random-intercept multilevel models and get pooled estimates
+# fit.dep <- with(finallist_model,
+#                 lmer(depress ~ 1 +
+#                        dummy_minus5 +
+#                        dummy_minus4 +
+#                        dummy_minus3 +
+#                        dummy_minus2 +
+#                        dummy_minus1 +
+#                        dummy_plus1 +
+#                        dummy_plus2 +
+#                        dummy_plus3 +
+#                        dummy_plus4 +
+#                        dummy_plus5 +
+#                        stroke.x +
+#                        stroke.x*dummy_minus5 +
+#                        stroke.x*dummy_minus4 +
+#                        stroke.x*dummy_minus3 +
+#                        stroke.x*dummy_minus2 +
+#                        stroke.x*dummy_minus1 +
+#                        stroke.x*dummy_plus1 +
+#                        stroke.x*dummy_plus2 +
+#                        stroke.x*dummy_plus3 +
+#                        stroke.x*dummy_plus4 +
+#                        stroke.x*dummy_plus5 + 
+#                        (1 | idauniq), 
+#                      REML = F))
+# 
+# fit.dep.pool <- testEstimates(fit.dep) # Pooling (Rubin's rules)
+# fit.dep.pool$estimates
+# 
+# 
+# # 1. Depressive symptoms 
+# # -------------------------
+# 
+# # Create object with pooled model fit coefficients
+# ef.fit.b  <- fit.dep.pool$estimates[1:22]
+# ef.fit.se <- fit.dep.pool$estimates[23:44]
+# ef.fit    <- data.frame(ef.fit.b, ef.fit.se)
+# 
+# # Calculate means for plotting
+# ef.fit$ef.fit.b[13] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[2]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[13] 
+# ef.fit$ef.fit.b[14] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[3]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[14] 
+# ef.fit$ef.fit.b[15] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[4]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[15] 
+# ef.fit$ef.fit.b[16] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[5]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[16] 
+# ef.fit$ef.fit.b[17] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[6]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[17] 
+# ef.fit$ef.fit.b[18] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[7]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[18] 
+# ef.fit$ef.fit.b[19] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[8]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[19] 
+# ef.fit$ef.fit.b[20] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[9]  + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[20] 
+# ef.fit$ef.fit.b[21] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[10] + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[21] 
+# ef.fit$ef.fit.b[22] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[11] + ef.fit$ef.fit.b[12] + ef.fit$ef.fit.b[22] 
+# ef.fit$ef.fit.b[12] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[12] 
+# ef.fit$ef.fit.b[2]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[2] 
+# ef.fit$ef.fit.b[3]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[3] 
+# ef.fit$ef.fit.b[4]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[4] 
+# ef.fit$ef.fit.b[5]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[5] 
+# ef.fit$ef.fit.b[6]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[6] 
+# ef.fit$ef.fit.b[7]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[7] 
+# ef.fit$ef.fit.b[8]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[8] 
+# ef.fit$ef.fit.b[9]  <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[9] 
+# ef.fit$ef.fit.b[10] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[10] 
+# ef.fit$ef.fit.b[11] <- ef.fit$ef.fit.b[1] + ef.fit$ef.fit.b[11]
+# 
+# # Name pooled effects
+# ef.fit$st.case <- c("Controls", "Controls", "Controls", "Controls", "Controls", 
+#                     "Controls", "Controls", "Controls", "Controls", "Controls", 
+#                     "Controls", 
+#                     "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", "Stroke", 
+#                     "Stroke", "Stroke", "Stroke", "Stroke", "Stroke")
+# ef.fit$time    <- c(0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10, 
+#                     0, -10, -8, -6, -4, -2, 2, 4, 6, 8, 10)
+# 
+# # Draw figure
+# fig_dep_long <- 
+#   ggplot(ef.fit, aes(x = time, y = ef.fit.b)) +
+#   geom_line(aes(colour = st.case), size = 1.2)  +
+#   geom_errorbar(aes(ymin = ef.fit.b - ef.fit.se, ymax = ef.fit.b + ef.fit.se, 
+#                     colour = st.case), 
+#                 size = 0.7, width = .3) +
+#   geom_vline(xintercept = -1, linetype = "dashed", 
+#              color = "black", size = 0.5) +
+#   labs(y = "Depressive symptoms", x = "Time in years") +
+#   scale_colour_manual(values = c("#cccccc", "#d4738b"), 
+#                       breaks = c("Controls", "Stroke"),
+#                       labels = c("Matched controls ", "Stroke survivors ")) +
+#   coord_cartesian(ylim = c(1,2.6)) +
+#   scale_y_continuous(expand = c(0, 0), 
+#                      breaks = c(1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6)) +
+#   scale_x_continuous(breaks = c(-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10)) +
+#   theme_classic(base_size = 15)+
+#   theme(axis.title.x = element_text(colour = "black", size = 19, 
+#                                     margin = margin(t = 0, r = 15, b = 0, l = 0)), 
+#         axis.title.y = element_text(colour = "black", size = 19, 
+#                                     margin = margin(t = 0, r = 15, b = 0, l = 0)),         
+#         axis.text.x  = element_text(colour = "black", size = 19, 
+#                                     margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+#         axis.text.y  = element_text(colour = "black", size = 19), 
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(), 
+#         legend.text  = element_text(colour = "black", size = 15), 
+#         legend.title = element_blank(),
+#         legend.position = "top")
+
 
 # -------------------
 # Actual data plots
@@ -924,42 +1339,28 @@ fig_mem_long <-
 
 # plot depressive symptoms
 # --------------------------
-sum_dep <- summarySE(data_final_long15, 
+sum_dep <- summarySE(data_final_long1, 
                      measurevar = "depress", 
-                     groupvars = c("n_strokes.x", "time"),
+                     groupvars = c("stroke.x", "time"),
                      na.rm = T, conf.interval = .95)
 
 # Make the graph with the 95% confidence interval
-ggplot(sum_dep, aes(x = time, y = depress, group = n_strokes.x, color = n_strokes.x)) +
+ggplot(sum_dep, aes(x = time, y = depress, group = stroke.x, color = stroke.x)) +
   geom_errorbar(width = .1, aes(ymin = depress - ci, ymax = depress + ci)) +
   geom_point(shape = 21, size = 3) + 
   geom_line() +
   #ylim(1, 3) + 
   labs(y = "Depressive symptoms", x = "")
 
-# plot mobility
-# ---------------
-sum_mob <- summarySE(data_final_long5, 
-                     measurevar = "mob", 
-                     groupvars = c("n_strokes.x", "time"),
-                     na.rm = T, conf.interval = .95)
-
-# Make the graph with the 95% confidence interval
-ggplot(sum_mob, aes(x = time, y = mob, group = n_strokes.x, color = n_strokes.x)) +
-  geom_errorbar(width = .1, aes(ymin = mob - ci, ymax = mob + ci)) +
-  geom_point(shape = 21, size = 3) + 
-  geom_line() +
-  labs(y = "Mobility", x = "")
-
 # plot adl
 # ----------
 sum_adl <- summarySE(data_final_long5, 
                      measurevar = "adl", 
-                     groupvars = c("n_strokes.x", "time"),
+                     groupvars = c("stroke.x", "time"),
                      na.rm = T, conf.interval = .95)
 
 # Make the graph with the 95% confidence interval
-ggplot(sum_adl, aes(x = time, y = adl, group = n_strokes.x, color = n_strokes.x)) +
+ggplot(sum_adl, aes(x = time, y = adl, group = stroke.x, color = stroke.x)) +
   geom_errorbar(width = .1, aes(ymin = adl - ci, ymax = adl + ci)) +
   geom_point(shape = 21, size = 3) + 
   geom_line() +
@@ -970,11 +1371,11 @@ ggplot(sum_adl, aes(x = time, y = adl, group = n_strokes.x, color = n_strokes.x)
 # -------------
 sum_mem <- summarySE(data_final_long5, 
                      measurevar = "mem", 
-                     groupvars = c("n_strokes.x", "time"),
+                     groupvars = c("stroke.x", "time"),
                      na.rm = T, conf.interval = .95)
 
 # Make the graph with the 95% confidence interval
-ggplot(sum_mem, aes(x = time, y = mem, group = n_strokes.x, color = n_strokes.x)) +
+ggplot(sum_mem, aes(x = time, y = mem, group = stroke.x, color = stroke.x)) +
   geom_errorbar(width = .1, aes(ymin = mem - ci, ymax = mem + ci)) +
   geom_point(shape = 21, size = 3) + 
   geom_line() +

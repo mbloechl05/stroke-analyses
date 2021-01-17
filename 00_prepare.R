@@ -1,6 +1,6 @@
-## =====================
-##  Packages
-## =====================
+# =====================
+#  Packages
+# =====================
 
 # Load all packages that are necessary to run the preprocessing, imputation and 
 # matching, and all analyses -- or only parts of it 
