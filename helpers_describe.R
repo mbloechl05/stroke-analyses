@@ -104,5 +104,91 @@ describeBy_imp <- function(x, data, binary, strokevar) {
   return(pools_2)
 }
 
+# -----------------------------------------------------------
+# Functions to calculate means of symptoms and chi-squared
+# -----------------------------------------------------------
+
+sym_stat <- function(list, sym) {
+  
+  # Stroke: create list of data frame and calculate mean percentage
+  slist_s <- lapply(list, subset, stroke.x == 1)
+  slist_s <- lapply(slist_s, '[', syms)
+  mean_stroke <- mean(sapply(slist_s, function(x) mean(x[, sym], na.rm = T)))
+  
+  # Controls: create list of data frame and calculate mean percentage
+  slist_c <- lapply(list, subset, stroke.x == 0)
+  slist_c <- lapply(slist_c, '[', syms)
+  mean_controls <- mean(sapply(slist_c, function(x) mean(x[, sym], na.rm = T)))
+  
+  # Calculate chi squared test over overal list of data frames
+  chi_list <- 
+    lapply(list, function(x) 
+      chisq.test(table(x = x[, sym], p = x$stroke.x)))
+  
+  # Extract test statistics for each imputed data set
+  chi <- c(chi_list[[1]]$statistic[1],  chi_list[[2]]$statistic[1],
+           chi_list[[3]]$statistic[1],  chi_list[[4]]$statistic[1], 
+           chi_list[[5]]$statistic[1],  chi_list[[6]]$statistic[1], 
+           chi_list[[7]]$statistic[1],  chi_list[[8]]$statistic[1], 
+           chi_list[[9]]$statistic[1],  chi_list[[10]]$statistic[1], 
+           chi_list[[11]]$statistic[1], chi_list[[12]]$statistic[1], 
+           chi_list[[13]]$statistic[1], chi_list[[14]]$statistic[1], 
+           chi_list[[15]]$statistic[1], chi_list[[16]]$statistic[1], 
+           chi_list[[17]]$statistic[1], chi_list[[18]]$statistic[1], 
+           chi_list[[19]]$statistic[1], chi_list[[20]]$statistic[1])
+  
+  # Have to unname variables...
+  chi <- unname(chi) 
+  
+  # Conduct multiply imputed chi-sqared test
+  chi_test <- micombine.chisquare(dk = chi, df = 1)
+  
+  # What to return
+  out <- list(mean_stroke, mean_controls, chi_test)
+  return(out)
+}
+
+
+# -------------------------------------------------------
+# Function to calculate percentage of depressed people
+# -------------------------------------------------------
+
+dep_stat <- function(list) {
+  
+  # Stroke: create list of data frame and calculate mean percentage
+  dlist_s <- lapply(list, subset, stroke.x == 1)
+  perc_stroke <- mean(sapply(dlist_s, function(x) mean(x[, "dep_bin"], na.rm = T)))
+  
+  # Controls: create list of data frame and calculate mean percentage
+  dlist_c <- lapply(list, subset, stroke.x == 0)
+  perc_controls <- mean(sapply(dlist_c, function(x) mean(x[, "dep_bin"], na.rm = T)))
+  
+  # Chi-square
+  chi_list <- 
+    lapply(list, function(x) 
+      chisq.test(table(x = x[, "dep_bin"], p = x$stroke.x)))
+  
+  # Extract test statistics for each imputed data set
+  chi <- c(chi_list[[1]]$statistic[1],  chi_list[[2]]$statistic[1],
+           chi_list[[3]]$statistic[1],  chi_list[[4]]$statistic[1], 
+           chi_list[[5]]$statistic[1],  chi_list[[6]]$statistic[1], 
+           chi_list[[7]]$statistic[1],  chi_list[[8]]$statistic[1], 
+           chi_list[[9]]$statistic[1],  chi_list[[10]]$statistic[1], 
+           chi_list[[11]]$statistic[1], chi_list[[12]]$statistic[1], 
+           chi_list[[13]]$statistic[1], chi_list[[14]]$statistic[1], 
+           chi_list[[15]]$statistic[1], chi_list[[16]]$statistic[1], 
+           chi_list[[17]]$statistic[1], chi_list[[18]]$statistic[1], 
+           chi_list[[19]]$statistic[1], chi_list[[20]]$statistic[1])
+  
+  # Have to unname variables...
+  chi <- unname(chi) 
+  
+  # Conduct multiply imputed chi-sqared test
+  chi_test <- micombine.chisquare(dk = chi, df = 1)
+  
+  # What to return
+  out <- list(perc_stroke, perc_controls, chi_test)
+  return(out)
+}
 
 
