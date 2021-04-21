@@ -29,9 +29,6 @@ lapply(c("plyr",
          "car", 
          "lme4", 
          "lmerTest", 
-         "arm", 
-         "bootnet", 
-         "qgraph", 
-         "NetworkComparisonTest"), 
+         "arm"), 
        require, character.only = TRUE)
 

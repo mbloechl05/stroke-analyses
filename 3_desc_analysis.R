@@ -12,12 +12,12 @@ load("data/processed/imp_data.RData") # imputed
 impdat <- mice::complete(imp, action = "long", include = FALSE)
 
 
-# --------------------------------------------
-# 1) MI: Check missing data before and after 
-# --------------------------------------------
+# ------------------------------------------------------------------
+# 1) Descriptive statistics before and after imputation (Table S1)
+# ------------------------------------------------------------------
 
-# 1.1) Before imputation: Descriptive stats for each variable in data frame
-# ----------------------------------------------------------------------------
+# 1.1) Descriptives observed data before imputation 
+# ----------------------------------------------------
 
 # calcualte descriptive stats 
 age <- describe(data_red$w1_dhager) 
@@ -40,8 +40,8 @@ list("age"        = age,
      "diabetes"   = dia)
 
 
-# 1.2) Descriptives observed and imputed data (Table S1)
-# ------------------------------------------------------
+# 1.2) Descriptives imputed data
+# ----------------------------------
 
 # compute mean and standard deviation in each imputed dataset
 i.age <- describe_imputed("w1_dhager",  bin = F)
@@ -64,12 +64,13 @@ list("age"        = i.age,
      "diabetes"   = i.dia)
 
 
-# 1.3) Table S1: Descriptives observed and imputed covariates
-# ---------------------------------------------------------
+# 1.3) Create Table S1
+# -----------------------
 
+# define total N
 N <- 10797
 
-### Now, we can create a data frame for stats that go into Table S1
+# Now, we can create a data frame for stats that go into Table S1
 mi_describe_frame = structure(list(
   # set variable names
   var = c("Age (in years)", "Male gender, yes", "White ethnicity, yes", 
@@ -99,7 +100,7 @@ mi_describe_frame = structure(list(
   i.se2 = c(0, i.gen$pool_range[2], i.eth$pool_range[2], i.edu$pool_range[2], 
             i.smo$pool_range[2], 0, i.hyp$pool_range[2], i.dia$pool_range[2])), 
   class = "data.frame", 
-  row.names = c(NA,-10L))
+  row.names = c(NA,-8L))
 
 
 # --------------------------------
@@ -194,7 +195,7 @@ for (i in seq(matchedlist)) {
 
 
 # ---------------------------------------
-#  3.) Descriptive statistics (Table 2)
+#  3.) Descriptive statistics (Table 1)
 # ---------------------------------------
 
 # 3.1) Pooled means and SDs 
