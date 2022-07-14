@@ -191,4 +191,44 @@ dep_stat <- function(list) {
   return(out)
 }
 
+# -------------------------------------------------------
+# Function to calculate Cramer's V
+# -------------------------------------------------------
 
+dep_cramv <- function(list) {
+  
+  # Stroke: create list of data frame and calculate mean percentage
+  dlist_s <- lapply(list, subset, stroke.x == 1)
+  perc_stroke <- mean(sapply(dlist_s, function(x) mean(x[, "dep_bin"], na.rm = T)))
+  
+  # Controls: create list of data frame and calculate mean percentage
+  dlist_c <- lapply(list, subset, stroke.x == 0)
+  perc_controls <- mean(sapply(dlist_c, function(x) mean(x[, "dep_bin"], na.rm = T)))
+  
+  # Chi-square
+  cramv_list <- 
+    lapply(list, function(x) 
+      cramersV(table(x = x[, "dep_bin"], p = x$stroke.x)))
+  
+  # Extract test statistics for each imputed data set
+  cramv <- c(cramv_list[[1]],cramv_list[[2]],
+           cramv_list[[3]],  cramv_list[[4]], 
+           cramv_list[[5]],  cramv_list[[6]], 
+           cramv_list[[7]],  cramv_list[[8]], 
+           cramv_list[[9]],  cramv_list[[10]], 
+           cramv_list[[11]], cramv_list[[12]], 
+           cramv_list[[13]], cramv_list[[14]], 
+           cramv_list[[15]], cramv_list[[16]], 
+           cramv_list[[17]], cramv_list[[18]], 
+           cramv_list[[19]], cramv_list[[20]])
+  
+  # # Have to unname variables...
+  # chi <- unname(chi) 
+  # 
+  # # Conduct multiply imputed chi-sqared test
+  # chi_test <- micombine.chisquare(dk = chi, df = 1)
+  # 
+  # # What to return
+  # out <- list(perc_stroke, perc_controls, chi_test)
+  return(cramv)
+}

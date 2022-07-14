@@ -8,6 +8,9 @@ rm(list = ls())
 # Load preprocessed data 
 load("data/processed/proc_data.RData")
 
+# Load packages
+# source("analyses/00_prepare.R")
+
 
 # --------------------------------------
 # 1) Impute missing data on covariates

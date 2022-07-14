@@ -5,6 +5,9 @@
 # clean work space
 rm(list = ls()) 
 
+# load packages 
+# source("analyses/00_prepare.R")
+
 # ---------------------------------------------------------
 # 1) Get raw data, select variables and do basic pre-proc
 # ---------------------------------------------------------
@@ -349,12 +352,12 @@ table(data$w7_hediast, useNA = "always")
 # Create new time variables indicating the time of stroke, before and after
 (data <- data %>%
     mutate(w1_time = case_when( # new var w1_time coding first wave in relation to stroke
-      w2_hediast == 1 ~ -1,    # if stroke in wave 2, w2_time = -1
-      w3_hediast == 1 ~ -2,    # if stroke in wave 3, w2_time = -2
-      w4_hediast == 1 ~ -3,    # if stroke in wave 4, w2_time = -3
-      w5_hediast == 1 ~ -4,    # if stroke in wave 5, w2_time = -4
-      w6_hediast == 1 ~ -5,    # if stroke in wave 6, w2_time = -5
-      w7_hediast == 1 ~ -6     # if stroke in wave 7, w2_time = -6
+      w2_hediast == 1 ~ -1,    # if stroke in wave 2, w1_time = -1
+      w3_hediast == 1 ~ -2,    # if stroke in wave 3, w1_time = -2
+      w4_hediast == 1 ~ -3,    # if stroke in wave 4, w1_time = -3
+      w5_hediast == 1 ~ -4,    # if stroke in wave 5, w1_time = -4
+      w6_hediast == 1 ~ -5,    # if stroke in wave 6, w1_time = -5
+      w7_hediast == 1 ~ -6     # if stroke in wave 7, w1_time = -6
     )))
 
 (data <- data %>%
@@ -443,13 +446,8 @@ data$w1_dhager[data$w1_dhager == 99] <- NA
 # Recode all binary variables to 0 (no) and 1 (yes); before 1 (yes), 2 (no)
 for (i in names(data[,c(grep("w1_dhsex", colnames(data)), # 0 = female
                         grep("w1_heska", colnames(data)))])) {
-  data[[i]][data[[i]]==2] <- 0}
+  data[[i]][data[[i]] == 2] <- 0}
  
-# !!!!! some data in sex are missing initially 
-# table(data$w1_dhsex, useNA = "always")
-# 
-# 1    2 <NA> 
-#   5335 6764  108 
 
 # Ethnicity
 # ------------
@@ -689,7 +687,7 @@ data_red <-
           "w6_psceda" , "w6_pscedb" , "w6_pscedc" , "w6_pscedd" , "w6_pscede" , 
           "w6_pscedf" , "w6_pscedg" , "w6_pscedh" , "w7_psceda" , "w7_pscedb" , 
           "w7_pscedc" , "w7_pscedd" , "w7_pscede" , "w7_pscedf" , "w7_pscedg" , 
-          "w7_pscedh")]
+          "w7_pscedh" , "n_waves")]
 
 
 # ---------------------------

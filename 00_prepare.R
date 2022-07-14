@@ -29,6 +29,8 @@ lapply(c("plyr",
          "car", 
          "lme4", 
          "lmerTest", 
-         "arm"), 
+         "arm", 
+         "lsr", 
+         "effsize"), 
        require, character.only = TRUE)
 

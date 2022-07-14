@@ -9,6 +9,8 @@ load("data/processed/proc_data.RData")
 load("data/processed/imp_data.RData")
 impdat <- mice::complete(imp, action = "long", include = FALSE)
 
+# Load packages 
+# source("analyses/00_prepare.R")
 
 # --------------------------------
 # 1) Propensity score matching

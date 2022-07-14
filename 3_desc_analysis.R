@@ -2,14 +2,94 @@
 #  Descriptive data analysis
 # =================================
 
-# Source helper functions
+# Source helper functions and packages
 source("analyses/helpers_describe.R")
+# source("analyses/00_prepare.R")
 
 # Load data 
 load("data/processed/proc_data.RData") # preprocessed
 load("data/processed/matched_data.RData") # matched
 load("data/processed/imp_data.RData") # imputed
 impdat <- mice::complete(imp, action = "long", include = FALSE)
+
+# IMPORTANT: Please note that some of the analyses rely on the data in 
+# long format. It is therefore recommended to perform the data preprocessing 
+# from script "4_long_analysis.R" before running analysis in this script!
+# Also always run the "00_prepare.R" script to load all packages used here! 
+
+# ---------------------------
+# 0) Check attrition
+# ---------------------------
+
+# 0.1) How many people participated in each wave?
+# -------------------------------------------------
+
+# select all waves variables
+waves <- data[,c("wave_1_c", "wave_2_c", "wave_3_c", "wave_4_c", 
+                 "wave_5_c", "wave_6_c", "wave_7_c")]
+
+# get info about n per wave
+sapply(waves, function(x) table(x))
+
+
+# 3.2) How many waves did people participate on average?
+# --------------------------------------------------------
+
+# create variable indicating number of waves people participated in 
+data$n_waves <- rowSums(data[,c("wave_1_c", "wave_2_c", "wave_3_c", "wave_4_c", 
+                                "wave_5_c", "wave_6_c", "wave_7_c")])
+
+# get mean and sd of number of years (waves*2 since assessment every 2 years)
+psych::describe(data$n_waves*2)
+
+# get mean and sd of number of years by group
+psych::describeBy(data_final01$n_waves*2, group = data_final01$stroke.x)
+psych::describeBy(data_final02$n_waves*2, group = data_final02$stroke.x)
+psych::describeBy(data_final03$n_waves*2, group = data_final03$stroke.x)
+psych::describeBy(data_final04$n_waves*2, group = data_final04$stroke.x)
+
+# 3.3) Was drop-out selective?
+# -------------------------------
+
+# descriptive stats of people with less than 4 waves
+loss <- subset(data, n_waves < 4) 
+
+psych::describe(loss[c("w1_dhager", "w1_dhsex", "w0_ethni", "w0_educ", "w1_heska",
+                       "w1_diab", "w0_bmival", "w1_hypt", "w1_dep_sum", "stroke")])
+
+table(loss$w1_dhsex, useNA = "always")
+table(loss$w0_ethni, useNA = "always")
+table(loss$w0_educ , useNA = "always")
+table(loss$w1_heska, useNA = "always")
+table(loss$w1_diab , useNA = "always")
+table(loss$w1_hypt , useNA = "always")
+table(loss$stroke  , useNA = "always")
+
+# Descriptive stats of poeple with 4 or more waves
+comp <- subset(data, n_waves >= 4) 
+
+psych::describe(comp[c("w1_dhager", "w1_dhsex", "w0_ethni", "w0_educ", "w1_heska",
+                       "w1_diab", "w0_bmival", "w1_hypt", "w1_dep_sum", "stroke")])
+
+table(comp$w1_dhsex, useNA = "always")
+table(comp$w0_ethni, useNA = "always")
+table(comp$w0_educ , useNA = "always")
+table(comp$w1_heska, useNA = "always")
+table(comp$w1_diab , useNA = "always")
+table(comp$w1_hypt , useNA = "always")
+table(comp$stroke  , useNA = "always")
+
+# Calculate Cohens ds for comparisons
+effsize::cohen.d(as.numeric(loss$w1_dhager),as.numeric(comp$w1_dhager), pooled = T, paired = F, na.rm = T)
+effsize::cohen.d(as.numeric(loss$w1_dhsex), as.numeric(comp$w1_dhsex),  pooled = T, paired = F, na.rm = T)
+effsize::cohen.d(as.numeric(loss$w0_educ),  as.numeric(comp$w0_educ),   pooled = T, paired = F, na.rm = T)
+effsize::cohen.d(as.numeric(loss$w0_ethni), as.numeric(comp$w0_ethni),  pooled = T, paired = F, na.rm = T)
+effsize::cohen.d(as.numeric(loss$w1_heska), as.numeric(comp$w1_heska),  pooled = T, paired = F, na.rm = T)
+effsize::cohen.d(as.numeric(loss$w1_diab),  as.numeric(comp$w1_diab),   pooled = T, paired = F, na.rm = T)
+effsize::cohen.d(loss$w0_bmival,            comp$w0_bmival,             pooled = T, paired = F, na.rm = T)
+effsize::cohen.d(as.numeric(loss$w1_hypt),  as.numeric(comp$w1_hypt),   pooled = T, paired = F, na.rm = T)
+effsize::cohen.d(loss$w1_dep_sum,           comp$w1_dep_sum,            pooled = T, paired = F, na.rm = T)
+effsize::cohen.d(loss$stroke,               comp$stroke,                pooled = T, paired = F, na.rm = T)
 
 
 # ------------------------------------------------------------------

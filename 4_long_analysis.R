@@ -2,14 +2,17 @@
 #  Longitudinal data analysis
 # ===============================
 
+# Source helper functions and packages
+source("analyses/helpers_describe.R")
+# source("analyses/00_prepare.R")
+
 # Load imputed and matched data 
 load("data/processed/proc_data.RData") # preprocessed
 load("data/processed/matched_data.RData") # matched 
 load("data/processed/imp_data.RData") # imputed
 impdat <- mice::complete(imp, action = "long", include = FALSE)
 
-# Source helper functions
-source("analyses/helpers_describe.R")
+# IMPORTANT: Always run the "00_prepare.R" script to load all packages used here! 
 
 # ----------------------------------------------
 # 1.) Data post-processing (for main analysis) 
@@ -82,7 +85,7 @@ for( i in seq_along(datalist)){
   # Convert rowid to numeric
   datalist[[i]]$rowid2        <- as.numeric(as.character(datalist[[i]]$rowid2))
   # Replace missing values matched_cases for stroke cases
-  datalist[[i]]$matched_cases <- ifelse(datalist[[i]]$rowid2 < 376, 
+  datalist[[i]]$matched_cases <- ifelse(datalist[[i]]$rowid2 < 426, 
                                         datalist[[i]]$rowid2, datalist[[i]]$matched_cases)
   # Exclude rows that weren't matched
   datalist[[i]] <- datalist[[i]][complete.cases(datalist[[i]][ , "matched_cases"]),]
@@ -120,7 +123,8 @@ finallist <- list(data_final01, data_final02, data_final03, data_final04,
 # Some data wrangling across all data frames in list
 for( i in seq_along(finallist)){
   # Order rows to have all matched cases in subsequent lines
-  finallist[[i]] <- finallist[[i]][order(finallist[[i]]$matched_cases),] 
+  finallist[[i]] <- finallist[[i]][order(finallist[[i]]$matched_cases),]
+  finallist[[i]] <- finallist[[i]] %>% fill(w1_time)
   finallist[[i]] <- finallist[[i]] %>% fill(w2_time)
   finallist[[i]] <- finallist[[i]] %>% fill(w3_time)
   finallist[[i]] <- finallist[[i]] %>% fill(w4_time)
@@ -129,11 +133,6 @@ for( i in seq_along(finallist)){
   finallist[[i]] <- finallist[[i]] %>% fill(w7_time)
 }
 
-# # delete some duplicate w2 columns
-# for( i in seq_along(finallist)){
-#   finallist[[i]] <- dplyr::select(finallist[[i]], -c(w1_adl_sum.x, 
-#                                                      w1_mem_sum.x))
-# }
 
 # 1.2.) Shape to long format 
 # ----------------------------
@@ -424,6 +423,24 @@ finallist_model <-
                      data_final_long16, data_final_long17, data_final_long18, 
                      data_final_long19, data_final_long20)) 
 
+# 1.5.) Check how many controls and strokes have data for each time point
+# --------------------------------------------------------------------------
+
+# How many participants in principle after re-structuring
+table(finallist[[1]]$time, finallist[[1]]$stroke.x, useNA = "always")
+
+# How many with outcome data (mean depressive symptoms) at each time point?
+
+# First, select depression items
+final_dep_items <- 
+  finallist[[1]][,c("dep", "eff", "sle", "hap", "lon", "enj", "sad", "goi")] 
+
+# Then, calculate sum score with sinlge missings (only for here to get n!)
+finallist[[1]]$depr_n <- rowMeans(final_dep_items, na.rm = T) 
+
+# Finally, describe data to get Ns
+describeBy(finallist[[1]]$depr_n, list(finallist[[1]]$time, finallist[[1]]$stroke.x))
+
 
 # -------------------------------------
 # 2.) Longitudinal model - only stroke
@@ -553,6 +570,9 @@ names(dep_res_m3) <- "percent"
 # new variable indicating group
 dep_res_m3$group <- c("stroke", "controls")
 
+# Cramer's V
+mean(dep_cramv(data_list_m3))
+
 
 # Time -1
 # ----------
@@ -571,6 +591,9 @@ names(dep_res_m1) <- "percent"
 
 # new variable indicating group
 dep_res_m1$group <- c("stroke", "controls")
+
+# Cramer's V
+mean(dep_cramv(data_list_m1))
 
 
 # Time 0
@@ -591,6 +614,9 @@ names(dep_res_0) <- "percent"
 # new variable indicating group
 dep_res_0$group <- c("stroke", "controls")
 
+# Cramer's V
+mean(dep_cramv(data_list_0))
+
 
 # Time 3
 # ----------
@@ -609,6 +635,9 @@ names(dep_res_p3) <- "percent"
 
 # new variable indicating group
 dep_res_p3$group <- c("stroke", "controls")
+
+# Cramer's V
+mean(dep_cramv(data_list_p3))
 
 
 # -------------------------
@@ -668,22 +697,22 @@ fe <- rbind(fe[,c(1,3:5)], fe.2)
 ggplot(fe, aes(x = time, y = est)) +
   geom_ribbon(aes(ymin = est-ci, ymax = est + ci, fill = st.case), alpha = 0.3) +
   geom_line(aes(colour = st.case), size = 1.2)  +
-  geom_vline(xintercept = -1, linetype = "dashed", 
-             color = "black", size = 0.5) +
-  labs(y = "Depressive symptoms", x = "Time in years") +
-  scale_colour_manual(values = c("#b7b7b7", "#d4738b"), 
-                      breaks = c("Controls", "Stroke"),
-                      labels = c("Matched controls ", "Stroke survivors ")) +
-  scale_fill_manual(values = c("#b7b7b7", "#d4738b"), 
-                      breaks = c("Controls", "Stroke"),
-                      labels = c("Matched controls ", "Stroke survivors ")) +
+  geom_vline(xintercept = -1, linetype = "dashed", color = "black", size = 0.5) +
+  labs(y = "Depressive symptoms", x = "Time to stroke (in years)") +
+  scale_colour_manual(values = rev(c("#b7b7b7", "#d4738b")),
+                      breaks = rev(c("Controls", "Stroke")),
+                      labels = rev(c("Controls ", "Stroke survivors "))) +
+  scale_fill_manual(values = rev(c("#b7b7b7", "#d4738b")),
+                      breaks = rev(c("Controls", "Stroke")),
+                      labels = rev(c("Controls ", "Stroke survivors ")), 
+                    guide = "none") +
   coord_cartesian(ylim = c(1,2.6)) +
   scale_y_continuous(expand = c(0, 0), 
                      breaks = c(1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6)) +
   scale_x_continuous(breaks = c(-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10)) +
   theme_classic(base_size = 15)+
   theme(axis.title.x = element_text(colour = "black", size = 19, 
-                                    margin = margin(t = 0, r = 15, b = 0, l = 0)), 
+                                    margin = margin(t = 10, r = 0, b = 0, l = 0)), 
         axis.title.y = element_text(colour = "black", size = 19, 
                                     margin = margin(t = 0, r = 15, b = 0, l = 0)),         
         axis.text.x  = element_text(colour = "black", size = 19, 
@@ -694,10 +723,11 @@ ggplot(fe, aes(x = time, y = est)) +
         panel.background = element_blank(), 
         legend.text  = element_text(colour = "black", size = 19), 
         legend.title = element_blank(),
-        legend.position = "top")
+        legend.key.size = unit(0.9,"cm"),
+        legend.position = c(0.15,0.9))
 
 # Save figure
-ggsave("figures/figure_1a.pdf", width = 11, height = 8, units = "in")
+ggsave("figures/figure_1a.pdf", width = 11.3, height = 6, units = "in")
 
 
 # 5.2) Figure 1B: Percentages
@@ -708,42 +738,46 @@ plot_perc <- function(data, title, xlabels) {
   ggplot(data = data, aes(y = percent, x = group, fill = group)) + 
     geom_bar(position = position_dodge(), stat = "identity", size = .3, 
              show.legend = F) +
-    ggtitle(title) +
     theme_bw() +
     theme(panel.border     = element_blank(),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
-          axis.title       = element_text(size = 15),
+          axis.title.x     = element_text(size = 19, colour = "black"),
           axis.line        = element_line(colour = "black"),
-          axis.text        = element_text(size = 15, colour = "black"),
-          legend.text      = element_text(size = 15), 
-          plot.title       = element_text(hjust = 0.5, size = 16)) +
-    labs(x = "", y = "Prevalence (in %)") +
+          axis.text.y      = element_text(size = 19, colour = "black"),
+          axis.text.x      = element_blank(),
+          legend.text      = element_text(size = 19), 
+          plot.title       = element_text(hjust = 0.5, size = 19), 
+          axis.ticks.x     = element_blank(), 
+          axis.title.y     = element_text(colour = "black", size = 19, 
+                                          margin = margin(t = 0, r = 15, 
+                                                          b = 0, l = 0))) +
+    labs(x = title, y = "Prevalence (in %)") +
     scale_x_discrete(breaks = c("controls", "stroke"),
                      labels = xlabels) +
-    scale_y_continuous(expand = c(0,0), limits = c(0,35),
-                       breaks = c(0,10,20,30)) +
-    scale_fill_manual(values=c('#d3d3d3','#8b4166'), name = "")
+    scale_y_continuous(expand = c(0,0), limits = c(0,43),
+                       breaks = c(0,10,20,30,40)) +
+    scale_fill_manual(values = c('#d3d3d3','#8b4166'), name = "")
 }
 
 # Time -3
-plot_perc(data = dep_res_m3, title = "-6 years", 
+plot_perc(data = dep_res_m3, title = "", 
           xlabels = c("",""))
-ggsave("figures/figure_1b_1.pdf", width = 2.5, height = 4, units = "in")
+ggsave("figures/figure_1b_1.pdf", width = 3, height = 3.5, units = "in")
 
 # Time -1
-plot_perc(data = dep_res_m1, title = "-2 years", 
+plot_perc(data = dep_res_m1, title = "", 
           xlabels = c("",""))
-ggsave("figures/figure_1b_2.pdf", width = 2.5, height = 4, units = "in")
+ggsave("figures/figure_1b_2.pdf", width = 3, height = 3.5, units = "in")
 
 # Time 0
-plot_perc(data = dep_res_0, title = "0 years", 
-          xlabels = c("Controls","Stroke"))
-ggsave("figures/figure_1b_3.pdf", width = 2.5, height = 4, units = "in")
+plot_perc(data = dep_res_0, title = "", 
+          xlabels = c("",""))
+ggsave("figures/figure_1b_3.pdf", width = 3, height = 3.5, units = "in")
 
 # Time +3
-plot_perc(data = dep_res_p3, title = "6 years", 
-          xlabels = c("Controls","Stroke"))
-ggsave("figures/figure_1b_4.pdf", width = 2.5, height = 4, units = "in")
+plot_perc(data = dep_res_p3, title = "", 
+          xlabels = c("",""))
+ggsave("figures/figure_1b_4.pdf", width = 3, height = 3.5, units = "in")
 
 

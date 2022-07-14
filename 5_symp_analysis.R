@@ -2,11 +2,12 @@
 #  Symptom analyses
 # ====================
 
-# Source helper functions
-source("analyses/helpers_describe.R")
+# !!! First parts of script 4_long_analysis.R have to be run before 
+# running this script!!!
 
-# First parts of script 4_long_analysis.R have to be run before 
-# running this script
+# Source helper functions and packages
+source("analyses/helpers_describe.R")
+# source("analyses/00_prepare.R")
 
 # -----------------------------
 # 1.) Symptom-based analyses
@@ -23,6 +24,16 @@ syms <- c("dep", "sle", "hap", "lon", "enj", "sad", "eff", "goi")
 slist_m3 <- lapply(finallist, subset, time == -3 & 
                            (stroke.x == 1 | stroke.x == 0))
 
+# How many people have available and missing symptom data at this time point?
+describeBy(slist_m3[[1]]$dep, slist_m3[[1]]$stroke.x)
+describeBy(slist_m3[[1]]$sle, slist_m3[[1]]$stroke.x)
+describeBy(slist_m3[[1]]$hap, slist_m3[[1]]$stroke.x)
+describeBy(slist_m3[[1]]$lon, slist_m3[[1]]$stroke.x)
+describeBy(slist_m3[[1]]$enj, slist_m3[[1]]$stroke.x)
+describeBy(slist_m3[[1]]$sad, slist_m3[[1]]$stroke.x)
+describeBy(slist_m3[[1]]$eff, slist_m3[[1]]$stroke.x)
+describeBy(slist_m3[[1]]$goi, slist_m3[[1]]$stroke.x)
+
 # Pooled comparison stats single symptoms
 dep_m3 <- sym_stat(slist_m3, "dep") # depressed mood
 sle_m3 <- sym_stat(slist_m3, "sle") # sleep
@@ -33,6 +44,10 @@ sad_m3 <- sym_stat(slist_m3, "sad") # sad
 eff_m3 <- sym_stat(slist_m3, "eff") # effort
 goi_m3 <- sym_stat(slist_m3, "goi") # going
 
+# extract p-values by hand and calculate adjusted p-values (fdr / benjamini-hochberg)
+p_m3 <- c(0.055595, 0.51663, 0.40366, 0.77166, 0.13694, 0.82035, 0.02279, 0.5918)
+p.adjust(p_m3, method = "BH")
+
 
 # Time -1
 # -----------
@@ -40,6 +55,16 @@ goi_m3 <- sym_stat(slist_m3, "goi") # going
 # Create list of dataframes that only have time = -1 data
 slist_m1 <- lapply(finallist, subset, time == -1 & 
                            (stroke.x == 1 | stroke.x == 0))
+
+# How many people have available and missing symptom data at this time point?
+describeBy(slist_m1[[1]]$dep, slist_m1[[1]]$stroke.x)
+describeBy(slist_m1[[1]]$sle, slist_m1[[1]]$stroke.x)
+describeBy(slist_m1[[1]]$hap, slist_m1[[1]]$stroke.x)
+describeBy(slist_m1[[1]]$lon, slist_m1[[1]]$stroke.x)
+describeBy(slist_m1[[1]]$enj, slist_m1[[1]]$stroke.x)
+describeBy(slist_m1[[1]]$sad, slist_m1[[1]]$stroke.x)
+describeBy(slist_m1[[1]]$eff, slist_m1[[1]]$stroke.x)
+describeBy(slist_m1[[1]]$goi, slist_m1[[1]]$stroke.x)
 
 # Pooled comparison stats single symptoms
 dep_m1 <- sym_stat(slist_m1, "dep") # depressed mood
@@ -51,6 +76,10 @@ sad_m1 <- sym_stat(slist_m1, "sad") # sad
 eff_m1 <- sym_stat(slist_m1, "eff") # effort
 goi_m1 <- sym_stat(slist_m1, "goi") # going
 
+# extract p-values by hand and calculate adjusted p-values (fdr / benjamini-hochberg)
+p_m1 <- c(0.03932, 0.28902, 0.1427, 0.77852, 0.27295, 0.77027, 0.01676, 0.01604)
+p.adjust(p_m1, method = "BH")
+
 
 # Time 0
 # -----------
@@ -58,6 +87,16 @@ goi_m1 <- sym_stat(slist_m1, "goi") # going
 # Create list of dataframes that only have time = 0 data
 slist_0 <- lapply(finallist, subset, time == 0 & 
                           (stroke.x == 1 | stroke.x == 0))
+
+# How many people have available and missing symptom data at this time point?
+describeBy(slist_0[[1]]$dep, slist_0[[1]]$stroke.x)
+describeBy(slist_0[[1]]$sle, slist_0[[1]]$stroke.x)
+describeBy(slist_0[[1]]$hap, slist_0[[1]]$stroke.x)
+describeBy(slist_0[[1]]$lon, slist_0[[1]]$stroke.x)
+describeBy(slist_0[[1]]$enj, slist_0[[1]]$stroke.x)
+describeBy(slist_0[[1]]$sad, slist_0[[1]]$stroke.x)
+describeBy(slist_0[[1]]$eff, slist_0[[1]]$stroke.x)
+describeBy(slist_0[[1]]$goi, slist_0[[1]]$stroke.x)
 
 # Pooled comparison stats single symptoms
 dep_0 <- sym_stat(slist_0, "dep") # depressed mood
@@ -69,12 +108,27 @@ sad_0 <- sym_stat(slist_0, "sad") # sad
 eff_0 <- sym_stat(slist_0, "eff") # effort
 goi_0 <- sym_stat(slist_0, "goi") # going
 
+# extract p-values by hand and calculate adjusted p-values (fdr / benjamini-hochberg)
+p_0 <- c(0.02289, 0.0268, 0.00262, 0.11102, 0.00014, 0.88187, 4.057535e-06, 9.827510e-07)
+format(p.adjust(p_0, method = "BH"), scientific = F)
+
+
 # Time 3
 # -----------
 
 # Create list of dataframes that only have time = 3 data
 slist_p3 <- lapply(finallist, subset, time == 3 & 
                            (stroke.x == 1 | stroke.x == 0))
+
+# How many people have available and missing symptom data at this time point?
+describeBy(slist_p3[[1]]$dep, slist_p3[[1]]$stroke.x)
+describeBy(slist_p3[[1]]$sle, slist_p3[[1]]$stroke.x)
+describeBy(slist_p3[[1]]$hap, slist_p3[[1]]$stroke.x)
+describeBy(slist_p3[[1]]$lon, slist_p3[[1]]$stroke.x)
+describeBy(slist_p3[[1]]$enj, slist_p3[[1]]$stroke.x)
+describeBy(slist_p3[[1]]$sad, slist_p3[[1]]$stroke.x)
+describeBy(slist_p3[[1]]$eff, slist_p3[[1]]$stroke.x)
+describeBy(slist_p3[[1]]$goi, slist_p3[[1]]$stroke.x)
 
 # Pooled comparison stats single symptoms
 dep_p3 <- sym_stat(slist_p3, "dep") # depressed mood
@@ -85,6 +139,10 @@ enj_p3 <- sym_stat(slist_p3, "enj") # enjoy
 sad_p3 <- sym_stat(slist_p3, "sad") # sad
 eff_p3 <- sym_stat(slist_p3, "eff") # effort
 goi_p3 <- sym_stat(slist_p3, "goi") # going
+
+# extract p-values by hand and calculate adjusted p-values (fdr / benjamini-hochberg)
+p_p3 <- c(0.06066, 0.13276, 0.36591, 0.54424, 0.12057, 0.21749, 0.00194, 0.00697)
+format(p.adjust(p_p3, method = "BH"), scientific = F)
 
 
 # -----------------------
@@ -134,11 +192,18 @@ sym_m3_long <- reshape(sym_m3,
                        timevar = "stroke") # 1 = stroke, 2 = controls
 sym_m3_long$stroke <- as.factor(sym_m3_long$stroke)
 
+# create data frame that identifies sign differences
+sig_diff_m3 <- subset(sym_m3_long, symptom == "eff")
+
 # Plot data
 ggplot(data = sym_m3_long, aes(y = symptom, x = score)) + 
         geom_line(aes(group = symptom), 
                   color = "grey90", alpha = 0.5, size = 2) +
         geom_point(aes(colour = stroke), size = 2, alpha = 0.4) + 
+        geom_line(data = sig_diff_m3, aes(group = symptom), 
+                  color = "grey90", size = 4) + 
+        geom_point(data = sig_diff_m3, aes(colour = stroke), 
+                   size = 4) +
         marias_theme
 ggsave("figures/figure_2a.pdf", width = 6, height = 4, units = "in")
 
@@ -164,7 +229,7 @@ sym_m1_long <- reshape(sym_m1,
                        timevar = "stroke") # 1 = stroke, 2 = controls
 sym_m1_long$stroke <- as.factor(sym_m1_long$stroke)
 
-# create data frame that identifies revenue differences over 20%
+# create data frame that identifies sign differences
 sig_diff_m1 <- subset(sym_m1_long, 
                       symptom == "dep"| symptom == "eff"| symptom == "goi")
                               
@@ -243,8 +308,7 @@ sym_p3_long <- reshape(sym_p3,
 sym_p3_long$stroke <- as.factor(sym_p3_long$stroke)
 
 # create data frame that identifies revenue differences over 20%
-sig_diff_p3 <- subset(sym_p3_long, 
-                      symptom == "dep"| symptom == "eff"| symptom == "goi")
+sig_diff_p3 <- subset(sym_p3_long, symptom == "eff"| symptom == "goi")
 
 # Plot data
 ggplot(data = sym_p3_long, aes(y = symptom, x = score)) + 
